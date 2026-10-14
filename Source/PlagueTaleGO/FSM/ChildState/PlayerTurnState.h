@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateBase.h"
+#include "../StateBase.h"
 #include "PlayerTurnState.generated.h"
 
 /**
