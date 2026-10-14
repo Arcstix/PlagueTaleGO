@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateBase.h"
+#include "../StateBase.h"
 #include "ItemInputState.generated.h"
 
 /**
