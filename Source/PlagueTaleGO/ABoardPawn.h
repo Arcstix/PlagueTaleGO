@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ABoardPawn.generated.h"
 
-class UBoardNode; // A se mettre d'accord sur le nom de la classe
+// class UBoardNode; // A se mettre d'accord sur le nom de la classe
 
 UENUM(BlueprintType)
 enum class EBoardPawnState : uint8 // A séparer surement plus tard dans un autre fichier appart
@@ -26,23 +26,24 @@ public:
 	ABoardPawn();
 
 	// Suppose la destination déjà validée par le plateau
-	UFUNCTION(BlueprintCallable, Category = "Board")
-	void BeginMove(UBoardNode* InTargetNode);
+	//	UFUNCTION(BlueprintCallable, Category = "Board")
+	//	void BeginMove(UBoardNode* InTargetNode);
 
 	UPROPERTY(BlueprintAssignable, Category = "Board")
 	FOnPawnMoveFinished OnMoveFinished;
 
 protected:
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<UBoardNode> CurrentNode;
+	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
+	// TObjectPtr<UBoardNode> CurrentNode;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<UBoardNode> LastNode;
+	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
+	// TObjectPtr<UBoardNode> LastNode;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<UBoardNode> TargetNode;
+	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
+	// TObjectPtr<UBoardNode> TargetNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
 	EBoardPawnState State = EBoardPawnState::Idle;

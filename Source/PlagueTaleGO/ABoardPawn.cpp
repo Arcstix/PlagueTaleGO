@@ -4,7 +4,7 @@
 #include "ABoardPawn.h"
 
 // Sets default values
-AABoardPawn::AABoardPawn()
+ABoardPawn::ABoardPawn()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -12,16 +12,15 @@ AABoardPawn::AABoardPawn()
 }
 
 // Called when the game starts or when spawned
-void AABoardPawn::BeginPlay()
+void ABoardPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void AABoardPawn::Tick(float DeltaTime)
+void ABoardPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
-
