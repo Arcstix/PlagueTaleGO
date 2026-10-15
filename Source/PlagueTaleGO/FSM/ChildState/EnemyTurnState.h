@@ -14,4 +14,6 @@ class PLAGUETALEGO_API UEnemyTurnState : public UStateBase
 {
 	GENERATED_BODY()
 	
+	public:
+	virtual TSubclassOf<UStateBase> GetNextState() override;
 };

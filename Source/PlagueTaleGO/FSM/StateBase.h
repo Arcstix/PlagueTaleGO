@@ -14,9 +14,9 @@ class PLAGUETALEGO_API UStateBase : public UObject
 {
 	GENERATED_BODY()
 	
+	public:
+	virtual void EnterState();
+	virtual void ExitState();
+	virtual TSubclassOf<UStateBase> GetNextState();
 	
-	
-	//StartState//
-	//ExitState//
-	//GetNextState//
 };

@@ -2,4 +2,9 @@
 
 
 #include "PlayerTurnState.h"
+#include "EnemyTurnState.h"
 
+TSubclassOf<UStateBase> UPlayerTurnState::GetNextState()
+{
+	return UEnemyTurnState::StaticClass();
+}
