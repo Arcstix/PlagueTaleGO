@@ -49,19 +49,15 @@ AANode* AAConnection::GetNode2() const
 
 void AAConnection::ConnectNode()
 {
-	if (node1 == nullptr || node2 == nullptr) return;
+	if (!node1 || !node2 || !StaticMesh) return;
 	
-	FVector Start = GetNode1()->GetActorLocation() + GetNode1()->GetActorScale().X * m_offsetFromNode;
-	FVector End = GetNode2()->GetActorLocation() + GetNode2()->GetActorScale().X * m_offsetFromNode;
+	FVector Start = GetNode1()->GetActorLocation();
+	FVector End = GetNode2()->GetActorLocation();
 
 	const FVector Direction = End - Start;
-	const float Distance = Direction.Length();
-	const FVector Midpoint = (Start + End) * 0.5f;
-
-	if (!StaticMesh)
-	{
-		return;
-	}
+	const float Distance = Direction.Length() - m_offsetFromNode;
+	FVector Midpoint = (Start + End) * 0.5f;
+	Midpoint.Z = m_zOffset;
 
 	if (Distance <= KINDA_SMALL_NUMBER)
 	{

@@ -24,7 +24,10 @@ public:
 	AANode* node2;
 
 	UPROPERTY(EditAnywhere, Category= "Parameters")
-	float m_lineWidth = 0.2f;
+	float m_connectionWidth = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Parameters")
+	float m_zOffset = -1;
 
 	UPROPERTY(EditAnywhere, Category = "Parameters")
 	FColor m_color = FColor::Black;
