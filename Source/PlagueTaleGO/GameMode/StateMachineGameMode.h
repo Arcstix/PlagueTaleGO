@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "PlagueTaleGO/FSM/StateBase.h"
 #include "StateMachineGameMode.generated.h"
 
 /**
@@ -14,11 +15,18 @@ class PLAGUETALEGO_API AStateMachineGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
-	//var actualState//
-	//var firstState//
+	protected:
+	UPROPERTY()
+	TObjectPtr<UStateBase> actualState;
 	
-	//StartStateMachineOnStart//
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UStateBase> firstState;
 	
-	//DebugLogActualState//
-	//GoToNextState//
+	virtual void BeginPlay() override;
+	
+	public:
+	void StartStateMachineOnStart();
+	void DebugLogActualState();
+	void GoToNextState();
+	
 };

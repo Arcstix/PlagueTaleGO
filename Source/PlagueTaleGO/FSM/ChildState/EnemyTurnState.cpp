@@ -2,4 +2,9 @@
 
 
 #include "EnemyTurnState.h"
+#include "ItemInputState.h"
 
+TSubclassOf<UStateBase> UEnemyTurnState::GetNextState()
+{
+	return UItemInputState::StaticClass();
+}

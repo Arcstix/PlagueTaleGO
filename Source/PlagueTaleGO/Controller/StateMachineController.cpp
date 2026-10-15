@@ -8,6 +8,8 @@
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
 
+#include "PlagueTaleGO/GameMode/StateMachineGameMode.h"
+
 void AStateMachineController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -38,5 +40,11 @@ void AStateMachineController::SetupInputComponent()
 
 void AStateMachineController::PressJump()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("PressJump"));
+	
+	if (AStateMachineGameMode* SMgameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		SMgameMode->GoToNextState();
+	}
+
+
 }
