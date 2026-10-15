@@ -7,7 +7,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
-
 #include "PlagueTaleGO/GameMode/StateMachineGameMode.h"
 
 void AStateMachineController::BeginPlay()
@@ -33,18 +32,46 @@ void AStateMachineController::SetupInputComponent()
 	{
 		if (JumpInputAction)
 		{
-			EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Started, this, &AStateMachineController::PressJump);
+			EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Started, this, &AStateMachineController::PrimaryAction);
+		}
+		if (OtherInputAction)
+		{
+			EnhancedInputComponent->BindAction(OtherInputAction, ETriggerEvent::Started, this, &AStateMachineController::SecondaryAction);
 		}
 	}
 }
 
-void AStateMachineController::PressJump()
+void AStateMachineController::PrimaryAction()
 {
 	
 	if (AStateMachineGameMode* SMgameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		SMgameMode->GoToNextState();
+		if (UStateBase* actualState=SMgameMode->GetActualState())
+		{
+			actualState->PrimaryInput();
+		
+			SMgameMode->GoToNextState();
+		}
+		
+		
 	}
+	
+}
 
-
+void AStateMachineController::SecondaryAction()
+{
+	
+	if (AStateMachineGameMode* SMgameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		if (UStateBase* actualState=SMgameMode->GetActualState())
+		{
+			actualState->SecondaryInput();
+		
+			SMgameMode->GoToNextState();
+		}
+		
+		
+		
+	}
+	
 }

@@ -3,8 +3,19 @@
 
 #include "EnemyTurnState.h"
 #include "ItemInputState.h"
+#include "PlayerTurnState.h"
 
 TSubclassOf<UStateBase> UEnemyTurnState::GetNextState()
 {
 	return UItemInputState::StaticClass();
+}
+
+void UEnemyTurnState::PrimaryInput()
+{
+	nextState = UPlayerTurnState::StaticClass();
+}
+
+void UEnemyTurnState::SecondaryInput()
+{
+	nextState = UItemInputState::StaticClass();
 }

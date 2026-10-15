@@ -15,3 +15,11 @@ TSubclassOf<UStateBase> UStateBase::GetNextState()
 {
 	return nullptr;
 }
+
+void UStateBase::PrimaryInput()
+{
+}
+
+void UStateBase::SecondaryInput()
+{
+}

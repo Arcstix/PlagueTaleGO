@@ -51,3 +51,8 @@ void AStateMachineGameMode::GoToNextState()
 		
 	}
 }
+
+UStateBase* AStateMachineGameMode::GetActualState() const
+{
+	return actualState;
+}

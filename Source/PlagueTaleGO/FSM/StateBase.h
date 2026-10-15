@@ -19,4 +19,7 @@ class PLAGUETALEGO_API UStateBase : public UObject
 	virtual void ExitState();
 	virtual TSubclassOf<UStateBase> GetNextState();
 	
+	virtual void PrimaryInput();
+	virtual void SecondaryInput();
+	
 };

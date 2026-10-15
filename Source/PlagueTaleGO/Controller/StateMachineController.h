@@ -22,6 +22,9 @@ class PLAGUETALEGO_API AStateMachineController : public APlayerController
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpInputAction;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> OtherInputAction;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "MappingContext")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 	
@@ -30,5 +33,6 @@ class PLAGUETALEGO_API AStateMachineController : public APlayerController
 	virtual  void SetupInputComponent() override;
 	
 	public:
-	void PressJump();
+	void PrimaryAction();
+	void SecondaryAction();
 };

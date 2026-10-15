@@ -29,4 +29,5 @@ class PLAGUETALEGO_API AStateMachineGameMode : public AGameModeBase
 	void DebugLogActualState();
 	void GoToNextState();
 	
+	UStateBase *GetActualState()const;
 };
