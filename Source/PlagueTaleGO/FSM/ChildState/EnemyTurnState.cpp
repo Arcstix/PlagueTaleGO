@@ -5,10 +5,7 @@
 #include "ItemInputState.h"
 #include "PlayerTurnState.h"
 
-TSubclassOf<UStateBase> UEnemyTurnState::GetNextState()
-{
-	return UItemInputState::StaticClass();
-}
+
 
 void UEnemyTurnState::PrimaryInput()
 {

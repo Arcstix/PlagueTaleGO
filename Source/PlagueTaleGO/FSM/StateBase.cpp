@@ -13,7 +13,7 @@ void UStateBase::ExitState()
 
 TSubclassOf<UStateBase> UStateBase::GetNextState()
 {
-	return nullptr;
+	return nextState;
 }
 
 void UStateBase::PrimaryInput()

@@ -16,13 +16,10 @@ class PLAGUETALEGO_API UPlayerTurnState : public UStateBase
 	
 	public:
 	
-		virtual TSubclassOf<UStateBase> GetNextState() override;
 
 		void PrimaryInput() override;
 	
 		void SecondaryInput() override;
 	
-	private:
-		UPROPERTY(EditDefaultsOnly)
-		TSubclassOf<UStateBase> nextState;
+	
 };
