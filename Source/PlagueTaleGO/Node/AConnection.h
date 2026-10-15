@@ -18,25 +18,19 @@ public:
 	// Sets default values for this actor's properties
 	AAConnection();
 	
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	AANode* node1;
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	AANode* node2;
 
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	float m_connectionWidth = 0.2f;
 
-	UPROPERTY(EditAnywhere, Category = "Parameters")
+	UPROPERTY(EditAnywhere, Category = "0 - Parameters")
 	float m_zOffset = -1;
 
-	UPROPERTY(EditAnywhere, Category = "Parameters")
-	FColor m_color = FColor::Black;
-
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	float m_offsetFromNode = 0.2f;
-
-private:
-	TArray<FVector> m_Points;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -54,5 +48,4 @@ public:
 	AANode* GetNode2() const;
 
 	void ConnectNode();
-	
 };

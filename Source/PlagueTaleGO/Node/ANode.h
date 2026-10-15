@@ -23,14 +23,11 @@ private:
 public:	
 	// Sets default values for this actor's properties
 	AANode();
-
-	UPROPERTY(EditAnywhere, Category= "Parameters")
-	UStaticMeshComponent* m_nodeMesh;
 	
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	TArray<AANode*> m_adjacentNodes;
 
-	UPROPERTY(EditAnywhere, Category= "Parameters")
+	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	TArray<AAConnection*> m_connections;
 
 	bool IsOccupied() const;
@@ -54,6 +51,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	bool IsConnectedTo(AANode node);
+	bool IsConnectedTo(AANode* node);
 
 };

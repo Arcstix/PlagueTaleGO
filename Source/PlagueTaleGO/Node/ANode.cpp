@@ -9,7 +9,6 @@ AANode::AANode()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 bool AANode::IsOccupied() const
@@ -76,11 +75,15 @@ void AANode::OnConstruction(const FTransform& Transform)
 void AANode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-bool AANode::IsConnectedTo(AANode node)
+bool AANode::IsConnectedTo(AANode* node)
 {
-	return true;
+	if (m_adjacentNodes.Contains(node))
+	{
+		return true;
+	}
+	
+	return false;
 }
 

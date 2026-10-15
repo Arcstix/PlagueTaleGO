@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "NodeGameMode.generated.h"
 
+class AANode;
+
 /**
  * 
  */
@@ -13,4 +15,9 @@ UCLASS()
 class PLAGUETALEGO_API ANodeGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+
+private:
+	TArray<AANode*> m_Nodes;
+	
+	
 };
