@@ -4,22 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "../StateBase.h"
-#include "PlayerTurnState.generated.h"
+#include "TS_MS_PlayerInput.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAGUETALEGO_API UPlayerTurnState : public UStateBase
+class PLAGUETALEGO_API UTS_MS_PlayerInput : public UStateBase
 {
 	GENERATED_BODY()
 	
 	public:
 	
-
 		void PrimaryInput() override;
-	
-		void SecondaryInput() override;
-	
 	
 };

@@ -4,21 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "../StateBase.h"
-#include "ItemInputState.generated.h"
+#include "TS_SM_ItemActionState.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAGUETALEGO_API UItemInputState : public UStateBase
+class PLAGUETALEGO_API UTS_SM_ItemActionState : public UStateBase
 {
 	GENERATED_BODY()
 	
 	public:
 	
 	void PrimaryInput() override;
-	
-	void SecondaryInput() override;
 	
 	
 

@@ -4,20 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "../StateBase.h"
-#include "EnemyTurnState.generated.h"
+#include "TS_SM_CheckPlayerState.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAGUETALEGO_API UEnemyTurnState : public UStateBase
+class PLAGUETALEGO_API UTS_SM_CheckPlayerState : public UStateBase
 {
 	GENERATED_BODY()
 	
 	public:
 	
+
 		void PrimaryInput() override;
 	
 		void SecondaryInput() override;
+	
 	
 };
