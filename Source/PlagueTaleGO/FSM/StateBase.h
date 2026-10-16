@@ -18,5 +18,6 @@ class PLAGUETALEGO_API UStateBase : public UObject
 	virtual void EnterState();
 	virtual void ExitState();
 	virtual TSubclassOf<UStateBase> GetNextState();
+	virtual bool AllowsPlayerInput() const { return false; }
 	
 };

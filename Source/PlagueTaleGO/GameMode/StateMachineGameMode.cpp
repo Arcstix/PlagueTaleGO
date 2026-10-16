@@ -34,6 +34,11 @@ void AStateMachineGameMode::DebugLogActualState()
 	}
 }
 
+bool AStateMachineGameMode::CanPlayerAct() const
+{
+	return actualState && actualState->AllowsPlayerInput();
+}
+
 void AStateMachineGameMode::GoToNextState()
 {
 	if (actualState)

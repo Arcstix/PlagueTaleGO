@@ -1,10 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
+// PlayerTurnState.cpp
 #include "PlayerTurnState.h"
-#include "EnemyTurnState.h"
 
 TSubclassOf<UStateBase> UPlayerTurnState::GetNextState()
 {
-	return UEnemyTurnState::StaticClass();
+	// Proto : tant que l'état ennemi n'existe pas, le tour joueur se relance
+	return UPlayerTurnState::StaticClass();
 }

@@ -24,6 +24,9 @@ public:
 	// Sets default values for this actor's properties
 	AANode();
 	
+	UPROPERTY(VisibleAnywhere, Category = "0 - Parameters")
+	TObjectPtr<UStaticMeshComponent> Mesh;
+	
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	TArray<AANode*> m_adjacentNodes;
 
