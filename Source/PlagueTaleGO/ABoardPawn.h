@@ -1,21 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// BoardEntity.h
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "BoardTypes.h"
 #include "ABoardPawn.generated.h"
 
-// class UBoardNode; // A se mettre d'accord sur le nom de la classe
+class ABoardNode;
 
-UENUM(BlueprintType)
-enum class EBoardPawnState : uint8 // A séparer surement plus tard dans un autre fichier appart
-{
-    Idle,
-    Moving
-}; 
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPawnMoveFinished, ABoardPawn*, Entity);
+// Émis quand l'entité a fini son déplacement visuel
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityMoveFinished, ABoardPawn*, Entity);
 
 UCLASS(Abstract)
 class ABoardPawn : public AActor
@@ -25,31 +19,46 @@ class ABoardPawn : public AActor
 public:
 	ABoardPawn();
 
-	// Suppose la destination déjà validée par le plateau
-	//	UFUNCTION(BlueprintCallable, Category = "Board")
-	//	void BeginMove(UBoardNode* InTargetNode);
+	// Lance l'animation de déplacement. Appelée par le Board, qui a déjà validé la case.
+	// UFUNCTION(BlueprintCallable, Category = "Board")
+	// void BeginMove(ABoardNode* InTargetNode);
 
+	UFUNCTION(BlueprintPure, Category = "Board")
+	bool IsMoving() const { return State == EBoardEntityState::Moving; }
+
+	// UFUNCTION(BlueprintPure, Category = "Board")
+	// ABoardNode* GetCurrentNode() const { return CurrentNode; }
+
+	// UFUNCTION(BlueprintPure, Category = "Board")
+	// ABoardNode* GetTargetNode() const { return TargetNode; }
+
+	// La StateMachine écoute ce délégué pour savoir quand passer à la suite
 	UPROPERTY(BlueprintAssignable, Category = "Board")
-	FOnPawnMoveFinished OnMoveFinished;
+	FOnEntityMoveFinished OnMoveFinished;
 
 protected:
-	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	// Nœud où se trouve visuellement l'entité (mis à jour à la fin du déplacement)
 	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	// TObjectPtr<UBoardNode> CurrentNode;
-
+	// TObjectPtr<ABoardNode> CurrentNode;
+	//
 	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	// TObjectPtr<UBoardNode> LastNode;
-
+	// TObjectPtr<ABoardNode> LastNode;
+	//
 	// UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	// TObjectPtr<UBoardNode> TargetNode;
+	// TObjectPtr<ABoardNode> TargetNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	EBoardPawnState State = EBoardPawnState::Idle;
+	EBoardEntityState State = EBoardEntityState::Idle;
 
-	float MoveAlpha = 0.f; // progression visuelle 0..1
+	// Durée de l'animation en secondes, réglable dans l'éditeur
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board")
+	float MoveDuration = 0.4f;
 
 private:
 	void CompleteMove();
+
+	float MoveAlpha = 0.f;
+	FVector MoveStartLocation;
 };

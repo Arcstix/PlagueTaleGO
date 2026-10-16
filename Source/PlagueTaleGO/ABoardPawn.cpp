@@ -12,11 +12,11 @@ ABoardPawn::ABoardPawn()
 }
 
 // Called when the game starts or when spawned
-void ABoardPawn::BeginPlay()
+/*void ABoardPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
+}*/
 
 // Called every frame
 void ABoardPawn::Tick(float DeltaTime)
