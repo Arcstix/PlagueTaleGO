@@ -9,9 +9,15 @@ AANode::AANode()
 {
 	// Les nœuds n'ont pas besoin de Tick
 	PrimaryActorTick.bCanEverTick = false;
+}
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	RootComponent = Mesh;
+void AANode::AddAdjacent(AANode* Other)
+{
+	if (!Other || Other == this)
+	{
+		return;
+	}
+	m_adjacentNodes.AddUnique(Other);
 }
 
 bool AANode::IsOccupied() const

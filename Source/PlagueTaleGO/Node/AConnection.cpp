@@ -51,6 +51,9 @@ void AAConnection::ConnectNode()
 {
 	if (!node1 || !node2 || !StaticMesh) return;
 	
+	node1->AddAdjacent(node2);
+	node2->AddAdjacent(node1);
+	
 	FVector Start = GetNode1()->GetActorLocation();
 	FVector End = GetNode2()->GetActorLocation();
 
