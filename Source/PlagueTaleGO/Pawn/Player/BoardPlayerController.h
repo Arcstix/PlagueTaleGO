@@ -19,6 +19,7 @@ protected:
 
 private:
 	void HandleClick();
+	void TryBindPlayerPawn();
 
 	// UFUNCTION obligatoire pour pouvoir utiliser AddDynamic
 	UFUNCTION()

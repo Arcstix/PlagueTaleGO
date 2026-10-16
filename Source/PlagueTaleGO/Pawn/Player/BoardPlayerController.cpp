@@ -13,19 +13,10 @@ void ABoardPlayerController::BeginPlay()
 
 	bShowMouseCursor = true;
 
-	// Première caméra trouvée dans le niveau
 	TActorIterator<ACameraActor> CameraIt(GetWorld());
 	if (CameraIt)
 	{
 		SetViewTarget(*CameraIt);
-	}
-
-	// Premier pion joueur trouvé dans le niveau
-	TActorIterator<APlayerPawn> PlayerIt(GetWorld());
-	if (PlayerIt)
-	{
-		PlayerPawn = *PlayerIt;
-		PlayerPawn->OnMoveFinished.AddDynamic(this, &ABoardPlayerController::HandlePlayerMoveFinished);
 	}
 }
 
@@ -33,16 +24,41 @@ void ABoardPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
+	if (!PlayerPawn)
+	{
+		TryBindPlayerPawn();
+	}
+
 	if (WasInputKeyJustPressed(EKeys::LeftMouseButton))
 	{
 		HandleClick();
 	}
 }
 
+void ABoardPlayerController::TryBindPlayerPawn()
+{
+	TActorIterator<APlayerPawn> PlayerIt(GetWorld());
+	if (PlayerIt)
+	{
+		PlayerPawn = *PlayerIt;
+		PlayerPawn->OnMoveFinished.AddDynamic(this, &ABoardPlayerController::HandlePlayerMoveFinished);
+		UE_LOG(LogTemp, Warning, TEXT("[Init] pion lié : %s, nœud=%s"),
+			*GetNameSafe(PlayerPawn), *GetNameSafe(PlayerPawn->GetCurrentNode()));
+	}
+}
+
 void ABoardPlayerController::HandleClick()
 {
 	AStateMachineGameMode* GameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GameMode || !GameMode->CanPlayerAct() || !PlayerPawn)
+	if (!GameMode)
+	{
+		return;
+	}
+	if (!GameMode->CanPlayerAct())
+	{
+		return;
+	}
+	if (!PlayerPawn)
 	{
 		return;
 	}
@@ -60,7 +76,8 @@ void ABoardPlayerController::HandleClick()
 	}
 
 	const EMoveResult Result = PlayerPawn->RequestMove(ClickedNode);
-	UE_LOG(LogTemp, Log, TEXT("Move result: %s"), *UEnum::GetValueAsString(Result));
+	UE_LOG(LogTemp, Warning, TEXT("[Click] nœud choisi : %s"), *GetNameSafe(ClickedNode));
+	UE_LOG(LogTemp, Warning, TEXT("Move result: %s"), *UEnum::GetValueAsString(Result));
 }
 
 void ABoardPlayerController::HandlePlayerMoveFinished(ABoardPawn* MovedPawn)

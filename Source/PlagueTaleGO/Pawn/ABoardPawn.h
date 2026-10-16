@@ -19,6 +19,7 @@ class PLAGUETALEGO_API ABoardPawn : public AActor
 
 public:
 	ABoardPawn();
+	void SnapToNode(AANode* Node);
 
 	// Suppose la case déjà validée par le Board
 	UFUNCTION(BlueprintCallable, Category = "Board")
@@ -34,15 +35,10 @@ public:
 	FOnEntityMoveFinished OnMoveFinished;
 
 protected:
-	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board")
 	TObjectPtr<UStaticMeshComponent> Mesh;
-
-	// Nœud de départ, à régler dans l'éditeur
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<AANode> StartNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
 	TObjectPtr<AANode> CurrentNode;

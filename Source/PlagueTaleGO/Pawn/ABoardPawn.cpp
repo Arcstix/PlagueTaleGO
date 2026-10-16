@@ -18,19 +18,19 @@ ABoardPawn::ABoardPawn()
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void ABoardPawn::BeginPlay()
+void ABoardPawn::SnapToNode(AANode* Node)
 {
-	Super::BeginPlay();
-
-	if (StartNode)
+	if (!Node)
 	{
-		CurrentNode = StartNode;
-		SetActorLocation(StartNode->GetActorLocation());
+		return;
+	}
 
-		if (UBoardSubsystem* Board = GetWorld()->GetSubsystem<UBoardSubsystem>())
-		{
-			Board->RegisterPawn(this, CurrentNode);
-		}
+	CurrentNode = Node;
+	SetActorLocation(Node->GetActorLocation());
+
+	if (UBoardSubsystem* Board = GetWorld()->GetSubsystem<UBoardSubsystem>())
+	{
+		Board->RegisterPawn(this, Node);
 	}
 }
 

@@ -1,9 +1,9 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿// PlayerSpawnNode.h
 #pragma once
 
 #include "CoreMinimal.h"
 #include "ANode.h"
+#include "../Pawn/Player/APlayerPawn.h" // adapter le chemin
 #include "PlayerSpawnNode.generated.h"
 
 UCLASS()
@@ -12,17 +12,15 @@ class PLAGUETALEGO_API APlayerSpawnNode : public AANode
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	APlayerSpawnNode();
 
+	// Blueprint dérivé de APlayerPawn, créé sur cette case au démarrage
 	UPROPERTY(EditAnywhere, Category = "0 - Spawn")
-	TSubclassOf<AActor> BP_PlayerToSpawn;
+	TSubclassOf<APlayerPawn> BP_PlayerToSpawn;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 };

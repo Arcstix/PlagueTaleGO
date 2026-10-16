@@ -3,7 +3,7 @@
 #include "../Pawn/ABoardPawn.h"
 #include "ANode.h"
 
-void UBoardSubsystem::RegisterEntity(ABoardPawn* Entity, AANode* Node)
+void UBoardSubsystem::RegisterPawn(ABoardPawn* Entity, AANode* Node)
 {
 	if (!Entity || !Node)
 	{
@@ -28,9 +28,14 @@ EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, AANode* InTargetNod
 	{
 		return EMoveResult::AlreadyMoving;
 	}
-
+	
 	AANode* FromNode = Entity->GetCurrentNode();
-	if (!FromNode || !FromNode->IsConnectedTo(InTargetNode))
+
+	if (!FromNode)
+	{
+		return EMoveResult::NoOrigin;
+	}
+	if (!FromNode->IsConnectedTo(InTargetNode))
 	{
 		return EMoveResult::NotAdjacent;
 	}

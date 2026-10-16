@@ -16,6 +16,7 @@ enum class EMoveResult : uint8
 {
 	Accepted,
 	NotAdjacent,
+	NoOrigin,
 	Blocked,
 	Occupied,
 	AlreadyMoving

@@ -18,10 +18,15 @@ void APlayerSpawnNode::BeginPlay()
 
 	if (BP_PlayerToSpawn != nullptr)
 	{
-		GetWorld()->SpawnActor<AActor>(
+		APlayerPawn* SpawnedPawn = GetWorld()->SpawnActor<APlayerPawn>(
 			BP_PlayerToSpawn,
 			GetActorLocation(),
 			GetActorRotation());
+
+		if (SpawnedPawn)
+		{
+			SpawnedPawn->SnapToNode(this);
+		}
 	}
 }
 
@@ -30,4 +35,3 @@ void APlayerSpawnNode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-
