@@ -7,8 +7,17 @@
 // Sets default values
 AANode::AANode()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// Les nœuds n'ont pas besoin de Tick
+	PrimaryActorTick.bCanEverTick = false;
+}
+
+void AANode::AddAdjacent(AANode* Other)
+{
+	if (!Other || Other == this)
+	{
+		return;
+	}
+	m_adjacentNodes.AddUnique(Other);
 }
 
 bool AANode::IsOccupied() const

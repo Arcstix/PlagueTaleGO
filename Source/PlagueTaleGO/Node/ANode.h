@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+	// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -23,6 +23,8 @@ private:
 public:	
 	// Sets default values for this actor's properties
 	AANode();
+	// Ajoute la relation de voisinage (sans doublon, sans auto-référence)
+	void AddAdjacent(AANode* Other);
 	
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
 	TArray<AANode*> m_adjacentNodes;
