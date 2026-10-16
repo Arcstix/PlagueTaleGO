@@ -3,7 +3,8 @@
 
 #include "CoreMinimal.h"
 #include "ANode.h"
-#include "PlayerSpawnNode.generated.h"
+#include "PlagueTaleGO/Pawn/ABoardPawn.h"
+#include "EntitySpawnNode.generated.h"
 
 UCLASS()
 class PLAGUETALEGO_API AEntitySpawnNode : public AANode
@@ -12,11 +13,11 @@ class PLAGUETALEGO_API AEntitySpawnNode : public AANode
 
 public:
 	// Sets default values for this actor's properties
-	APlayerSpawnNode();
+	AEntitySpawnNode();
 
-	// Blueprint dérivé de APlayerPawn, créé sur cette case au démarrage
+	// Blueprint dérivé de ABoardPawn, créé sur cette case au démarrage
 	UPROPERTY(EditAnywhere, Category = "0 - Spawn")
-	TSubclassOf<AActor> BP_PlayerToSpawn;
+	TSubclassOf<ABoardPawn> BP_EntityToSpawn;
 
 protected:
 	virtual void BeginPlay() override;

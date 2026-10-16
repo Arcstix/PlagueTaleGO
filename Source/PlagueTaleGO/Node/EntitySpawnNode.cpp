@@ -18,8 +18,8 @@ void AEntitySpawnNode::BeginPlay()
 
 	if (BP_EntityToSpawn != nullptr)
 	{
-		APlayerPawn* SpawnedPawn = GetWorld()->SpawnActor<APlayerPawn>(
-			BP_PlayerToSpawn,
+		ABoardPawn* SpawnedPawn = GetWorld()->SpawnActor<ABoardPawn>(
+			BP_EntityToSpawn,
 			GetActorLocation(),
 			GetActorRotation());
 
