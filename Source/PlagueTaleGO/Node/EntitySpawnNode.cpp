@@ -1,32 +1,32 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PlayerSpawnNode.h"
+#include "EntitySpawnNode.h"
 
 
 // Sets default values
-APlayerSpawnNode::APlayerSpawnNode()
+AEntitySpawnNode::AEntitySpawnNode()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
 // Called when the game starts or when spawned
-void APlayerSpawnNode::BeginPlay()
+void AEntitySpawnNode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (BP_PlayerToSpawn != nullptr)
+	if (BP_EntityToSpawn != nullptr)
 	{
-		GetWorld()->SpawnActor<AActor>(
-			BP_PlayerToSpawn,
+		GetWorld()->SpawnActor<APawn>(
+			BP_EntityToSpawn,
 			GetActorLocation(),
 			GetActorRotation());
 	}
 }
 
 // Called every frame
-void APlayerSpawnNode::Tick(float DeltaTime)
+void AEntitySpawnNode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }

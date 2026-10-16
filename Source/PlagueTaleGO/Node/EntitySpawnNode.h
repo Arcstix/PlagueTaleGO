@@ -4,20 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "ANode.h"
-#include "PlayerSpawnNode.generated.h"
+#include "EntitySpawnNode.generated.h"
 
 UCLASS()
-class PLAGUETALEGO_API APlayerSpawnNode : public AANode
+class PLAGUETALEGO_API AEntitySpawnNode : public AANode
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	APlayerSpawnNode();
+	AEntitySpawnNode();
 
 	UPROPERTY(EditAnywhere, Category = "0 - Spawn")
-	TSubclassOf<AActor> BP_PlayerToSpawn;
-
+	TSubclassOf<APawn> BP_EntityToSpawn;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
