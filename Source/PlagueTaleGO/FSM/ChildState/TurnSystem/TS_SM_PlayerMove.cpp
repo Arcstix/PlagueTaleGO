@@ -4,9 +4,10 @@
 #include "TS_SM_PlayerMove.h"
 
 #include "TS_SM_CheckPlayerState.h"
+#include "TS_SM_CheckVictoryCondition.h"
 
 
 void UTS_SM_PlayerMove::PrimaryInput()
 {
-	nextState = UTS_SM_CheckPlayerState::StaticClass();
+	nextState = UTS_SM_CheckVictoryCondition::StaticClass();
 }

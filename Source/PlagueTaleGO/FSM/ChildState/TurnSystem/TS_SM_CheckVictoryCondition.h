@@ -17,4 +17,6 @@ public:
 	
 	void PrimaryInput() override;
 	
+	void SecondaryInput() override;
+	
 };
