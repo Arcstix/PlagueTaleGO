@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../StateBase.h"
+#include "PlagueTaleGO/FSM/StateBase.h"
 #include "TS_SM_CheckPlayerState.generated.h"
 
 /**
