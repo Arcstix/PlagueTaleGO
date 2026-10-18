@@ -27,8 +27,12 @@ class PLAGUETALEGO_API AStateMachineGameMode : public AGameModeBase
 	public:
 	void StartStateMachineOnStart();
 	void DebugLogActualState();
-	bool CanPlayerAct() const;
+	
 	void GoToNextState();
 	
 	UStateBase *GetActualState()const;
+	
+	bool CanPlayerAct() const;
+	
+	
 };
