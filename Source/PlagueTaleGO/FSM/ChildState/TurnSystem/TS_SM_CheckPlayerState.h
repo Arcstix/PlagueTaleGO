@@ -16,7 +16,7 @@ class PLAGUETALEGO_API UTS_SM_CheckPlayerState : public UStateBase
 	
 	public:
 	
-
+	virtual bool AllowsPlayerInput() const override { return true; }
 		void PrimaryInput() override;
 	
 		void SecondaryInput() override;

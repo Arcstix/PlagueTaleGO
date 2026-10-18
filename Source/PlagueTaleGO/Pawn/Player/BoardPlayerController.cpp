@@ -6,6 +6,9 @@
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
+#include "Engine/LocalPlayer.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 void ABoardPlayerController::BeginPlay()
 {
@@ -17,6 +20,56 @@ void ABoardPlayerController::BeginPlay()
 	if (CameraIt)
 	{
 		SetViewTarget(*CameraIt);
+	}
+
+	// Ajout du Mapping Context pour les touches de la state machine
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		if (DefaultMappingContext)
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+}
+
+void ABoardPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		if (PrimaryInputAction)
+		{
+			EnhancedInputComponent->BindAction(PrimaryInputAction, ETriggerEvent::Started, this, &ABoardPlayerController::PrimaryAction);
+		}
+		if (SecondaryInputAction)
+		{
+			EnhancedInputComponent->BindAction(SecondaryInputAction, ETriggerEvent::Started, this, &ABoardPlayerController::SecondaryAction);
+		}
+	}
+}
+
+void ABoardPlayerController::PrimaryAction()
+{
+	if (AStateMachineGameMode* GameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		if (UStateBase* ActualState = GameMode->GetActualState())
+		{
+			ActualState->PrimaryInput();
+			GameMode->GoToNextState();
+		}
+	}
+}
+
+void ABoardPlayerController::SecondaryAction()
+{
+	if (AStateMachineGameMode* GameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		if (UStateBase* ActualState = GameMode->GetActualState())
+		{
+			ActualState->SecondaryInput();
+			GameMode->GoToNextState();
+		}
 	}
 }
 
