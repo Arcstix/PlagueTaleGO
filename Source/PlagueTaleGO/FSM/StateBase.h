@@ -15,9 +15,10 @@ class PLAGUETALEGO_API UStateBase : public UObject
 	GENERATED_BODY()
 	
 	public:
-		virtual void EnterState();
-		virtual void ExitState();
-		virtual TSubclassOf<UStateBase> GetNextState();
+	virtual void EnterState();
+	virtual void ExitState();
+	virtual TSubclassOf<UStateBase> GetNextState();
+	virtual bool AllowsPlayerInput() const { return false; }
 	
 	virtual void PrimaryInput();
 	virtual void SecondaryInput();
