@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "PlagueTaleGO/FSM/StateBase.h"
-#include "StateMachineGameMode.generated.h"
+#include "BoardGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAGUETALEGO_API AStateMachineGameMode : public AGameModeBase
+class PLAGUETALEGO_API ABoardGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	

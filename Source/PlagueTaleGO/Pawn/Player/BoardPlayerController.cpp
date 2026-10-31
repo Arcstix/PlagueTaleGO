@@ -2,9 +2,11 @@
 #include "BoardPlayerController.h"
 #include "APlayerPawn.h"
 #include "../../Node/ANode.h"
-#include "PlagueTaleGO/GameMode/StateMachineGameMode.h"
+#include "PlagueTaleGO/GameMode/BoardGameMode.h"
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "Engine/World.h"
 
 void ABoardPlayerController::BeginPlay()
@@ -12,6 +14,15 @@ void ABoardPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	bShowMouseCursor = true;
+
+	/* Add Mapping Context */
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		if (DefaultMappingContext)
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
 
 	TActorIterator<ACameraActor> CameraIt(GetWorld());
 	if (CameraIt)
@@ -47,9 +58,23 @@ void ABoardPlayerController::TryBindPlayerPawn()
 	}
 }
 
+void ABoardPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	/* Bind Actions */
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		if (JumpInputAction)
+		{
+			EnhancedInputComponent->BindAction(JumpInputAction, ETriggerEvent::Started, this, &ABoardPlayerController::PressJump);
+		}
+	}
+}
+
 void ABoardPlayerController::HandleClick()
 {
-	AStateMachineGameMode* GameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode());
+	ABoardGameMode* GameMode = Cast<ABoardGameMode>(GetWorld()->GetAuthGameMode());
 	if (!GameMode)
 	{
 		return;
@@ -82,9 +107,17 @@ void ABoardPlayerController::HandleClick()
 
 void ABoardPlayerController::HandlePlayerMoveFinished(ABoardPawn* MovedPawn)
 {
-	AStateMachineGameMode* GameMode = Cast<AStateMachineGameMode>(GetWorld()->GetAuthGameMode());
+	ABoardGameMode* GameMode = Cast<ABoardGameMode>(GetWorld()->GetAuthGameMode());
 	if (GameMode)
 	{
 		GameMode->GoToNextState();
+	}
+}
+
+void ABoardPlayerController::PressJump()
+{
+	if (ABoardGameMode* SMgameMode = Cast<ABoardGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		SMgameMode->GoToNextState();
 	}
 }

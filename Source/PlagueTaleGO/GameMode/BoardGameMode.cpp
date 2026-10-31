@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "StateMachineGameMode.h"
+#include "BoardGameMode.h"
 #include "PlagueTaleGO/FSM/StateBase.h"
 #include "Engine/Engine.h"
 
-void AStateMachineGameMode::BeginPlay()
+void ABoardGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
@@ -13,7 +13,7 @@ void AStateMachineGameMode::BeginPlay()
 	
 }
 
-void AStateMachineGameMode::StartStateMachineOnStart()
+void ABoardGameMode::StartStateMachineOnStart()
 {
 	if (firstState)
 	{
@@ -25,7 +25,7 @@ void AStateMachineGameMode::StartStateMachineOnStart()
 	}
 }
 
-void AStateMachineGameMode::DebugLogActualState()
+void ABoardGameMode::DebugLogActualState()
 {
 	if (actualState)
 	{
@@ -34,12 +34,12 @@ void AStateMachineGameMode::DebugLogActualState()
 	}
 }
 
-bool AStateMachineGameMode::CanPlayerAct() const
+bool ABoardGameMode::CanPlayerAct() const
 {
 	return actualState && actualState->AllowsPlayerInput();
 }
 
-void AStateMachineGameMode::GoToNextState()
+void ABoardGameMode::GoToNextState()
 {
 	if (actualState)
 	{

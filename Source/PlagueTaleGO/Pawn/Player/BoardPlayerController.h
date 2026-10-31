@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerController.h"
 #include "BoardPlayerController.generated.h"
 
+class UInputAction;
+class UInputMappingContext;
 class APlayerPawn;
 class ABoardPawn;
 
@@ -17,6 +19,14 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> JumpInputAction;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "MappingContext")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
+
+	virtual void SetupInputComponent() override;
+	
 private:
 	void HandleClick();
 	void TryBindPlayerPawn();
@@ -27,4 +37,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<APlayerPawn> PlayerPawn;
+
+public:
+	void PressJump();
 };
