@@ -7,6 +7,8 @@
 #include "PlagueTaleGO/Turns/StateBase.h"
 #include "BoardGameMode.generated.h"
 
+class APlayerPawn;
+
 /**
  * 
  */
@@ -14,8 +16,20 @@ UCLASS()
 class PLAGUETALEGO_API ABoardGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	// Lance la partie : fait apparaître les pions depuis les cases du niveau
+	virtual void StartPlay() override;
+
+	UFUNCTION(BlueprintPure, Category = "Board")
+	APlayerPawn* GetPlayerPawn() const { return PlayerPawn; }
+
+	void StartStateMachineOnStart();
+	void DebugLogActualState();
+	bool CanPlayerAct() const;
+	void GoToNextState();
 	
-	protected:
+protected:
 	UPROPERTY()
 	TObjectPtr<UStateBase> CurrentState;
 	
@@ -23,11 +37,13 @@ class PLAGUETALEGO_API ABoardGameMode : public AGameModeBase
 	TSubclassOf<UStateBase> FirstState;
 	
 	virtual void BeginPlay() override;
+
+private:
+	// Parcourt les cases et crée chaque StartingEntity sur sa case
+	void SpawnBoardEntities();
 	
-	public:
-	void StartStateMachineOnStart();
-	void DebugLogActualState();
-	bool CanPlayerAct() const;
-	void GoToNextState();
+	// Le pion joueur créé au démarrage (servira à la tâche 25)
+	UPROPERTY()
+	TObjectPtr<APlayerPawn> PlayerPawn;
 	
 };
