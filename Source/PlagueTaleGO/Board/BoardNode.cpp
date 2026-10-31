@@ -2,7 +2,8 @@
 
 
 #include "BoardNode.h"
-#include "BoardConnection.h"
+#include "Board.h"
+#include "EngineUtils.h"   // TActorIterator
 
 // Sets default values
 ABoardNode::ABoardNode()
@@ -11,88 +12,46 @@ ABoardNode::ABoardNode()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-void ABoardNode::AddAdjacent(ABoardNode* Other)
-{
-	if (!Other || Other == this)
-	{
-		return;
-	}
-	AdjacentNodes.AddUnique(Other);
-}
-
-bool ABoardNode::IsOccupied() const
-{
-	return bIsOccupied;
-}
-
-void ABoardNode::SetOccupied(bool bValue)
-{
-	bIsOccupied = bValue;
-}
-
-bool ABoardNode::IsBlocked() const
-{
-	return bIsBlocked;
-}
-
-void ABoardNode::SetBlocked(bool bValue)
-{
-	bIsBlocked = bValue;
-}
-
-bool ABoardNode::IsSwipable() const
-{
-	return bIsSwipable;
-}
-
-void ABoardNode::SetSwipable(bool bValue)
-{
-	bIsSwipable = bValue;
-}
-
-bool ABoardNode::IsClickable() const
-{
-	return bIsClickable;
-}
-
-void ABoardNode::SetClickable(bool bValue)
-{
-	bIsClickable = bValue;
-}
-
-// Called when the game starts or when spawned
-void ABoardNode::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
 void ABoardNode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (Connections.Num() == 0) return;
-
-	for (ABoardConnection* Connection : Connections)
+	ABoard* Board = FindBoard();
+	if (!Board)
 	{
-		if (Connection != nullptr)
-			Connection->ConnectNode();
+		return;   // pas de Board dans le niveau : la case reste où elle est
+	}
+
+	// Cale la case sur la grille en X/Y, garde sa hauteur
+	GridCoord = Board->WorldToGrid(GetActorLocation());
+	const FVector Snapped = Board->GridToWorld(GridCoord);
+	SetActorLocation(FVector(Snapped.X, Snapped.Y, GetActorLocation().Z));
+}
+
+#if WITH_EDITOR
+void ABoardNode::PostEditMove(bool bFinished)
+{
+	Super::PostEditMove(bFinished);
+
+	// Seulement quand on lâche la case, pour ne pas tout redessiner à chaque pixel
+	if (bFinished)
+	{
+		if (ABoard* Board = FindBoard())
+		{
+			Board->RebuildLinkVisuals();
+		}
 	}
 }
+#endif
 
-// Called every frame
-void ABoardNode::Tick(float DeltaTime)
+ABoard* ABoardNode::FindBoard() const
 {
-	Super::Tick(DeltaTime);
-}
-
-bool ABoardNode::IsConnectedTo(ABoardNode* node)
-{
-	if (AdjacentNodes.Contains(node))
+	UWorld* World = GetWorld();
+	if (!World)
 	{
-		return true;
+		return nullptr;
 	}
-	
-	return false;
-}
 
+	TActorIterator<ABoard> It(World);
+	return It ? *It : nullptr;
+}

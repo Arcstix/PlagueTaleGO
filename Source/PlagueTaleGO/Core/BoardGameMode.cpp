@@ -18,7 +18,6 @@ void ABoardGameMode::StartStateMachineOnStart()
 {
 	if (FirstState)
 	{
-		
 		CurrentState = NewObject<UStateBase>(this, FirstState);
 		DebugLogActualState();
 		CurrentState->EnterState();
@@ -28,13 +27,12 @@ void ABoardGameMode::StartStateMachineOnStart()
 
 void ABoardGameMode::DebugLogActualState()
 {
-
 	if (!CurrentState) return;
 	
 	UE_LOG(LogPlagueTaleGO, Log, TEXT("État courant : %s"), *CurrentState->GetName());
 
 #if !UE_BUILD_SHIPPING
-	if (CurrentState)
+	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, 
 			CurrentState->GetName());

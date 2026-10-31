@@ -4,55 +4,78 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PlagueTaleGO/Items/BoardItem.h"
 #include "BoardNode.generated.h"
 
+	class ABoardPawn;
 class UStaticMeshComponent;
 class ABoardConnection;
+class ABoard;
 
+/**
+ * Une case du plateau. Elle se cale sur la grille du ABoard du niveau.
+ * Elle ne connaît PAS ses voisins : c'est UBoardSubsystem qui les calcule
+ * à partir des coordonnées et des liens bloqués du ABoard.
+ */
 UCLASS()
 class PLAGUETALEGO_API ABoardNode : public AActor
 {
 	GENERATED_BODY()
 
-private:
-	bool bIsOccupied = false;
-	bool bIsBlocked = false;
-	bool bIsSwipable = false;
-	bool bIsClickable = false;
-	
-public:	
-	// Sets default values for this actor's properties
+public:
 	ABoardNode();
-	// Ajoute la relation de voisinage (sans doublon, sans auto-référence)
-	void AddAdjacent(ABoardNode* Other);
-	
-	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	TArray<ABoardNode*> AdjacentNodes;
 
-	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	TArray<ABoardConnection*> Connections;
+	// --- Lecture (utilisée par le subsystem, le GameMode, les états) ---
+	UFUNCTION(BlueprintPure, Category = "Board")
+	FIntPoint GetGridCoord() const { return GridCoord; }
 
-	bool IsOccupied() const;
-	void SetOccupied(bool bValue);
+	UFUNCTION(BlueprintPure, Category = "Board")
+	bool IsBlocked() const { return bIsBlocked; }
 
-	bool IsBlocked() const;
-	void SetBlocked(bool bValue);
+	UFUNCTION(BlueprintPure, Category = "Board")
+	bool IsExit() const { return bIsExit; }
 
-	bool IsSwipable() const;
-	void SetSwipable(bool bValue);
+	TSubclassOf<ABoardPawn> GetStartingEntity() const { return StartingEntity; }
 
-	bool IsClickable() const;
-	void SetClickable(bool bValue);
+	TSubclassOf<UBoardItem> GetItem() const { return Item; }
+	bool HasItem() const { return Item != nullptr; }
+
+	// Appelé quand le joueur ramasse l'objet (en jeu uniquement)
+	// void ClearItem() { Item = nullptr; }
+
+	void SetBlocked(bool bValue) { bIsBlocked = bValue; }
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+#if WITH_EDITOR
+	// Redessine les liens quand on déplace la case dans l'éditeur
+	virtual void PostEditMove(bool bFinished) override;
+#endif
 
-	bool IsConnectedTo(ABoardNode* node);
+	// --- Données du niveau (renseignées par le level designer / l'outil) ---
 
+	// Coordonnées sur la grille, calculées automatiquement : non éditable
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board")
+	FIntPoint GridCoord = FIntPoint::ZeroValue;
+
+	// Pion créé sur cette case au démarrage (joueur ou ennemi). Vide = aucun.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	TSubclassOf<ABoardPawn> StartingEntity;
+
+	// Objet posé sur cette case. Vide = aucun.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	TSubclassOf<UBoardItem> Item;
+
+	// Atteindre cette case fait gagner la partie
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	bool bIsExit = false;
+
+	// Case infranchissable (obstacle temporaire, effet d'objet…)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	bool bIsBlocked = false;
+
+private:
+	// Le ABoard du niveau, ou nullptr s'il n'y en a pas
+	ABoard* FindBoard() const;
 };
