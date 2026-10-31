@@ -4,33 +4,33 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "AConnection.generated.h"
+#include "BoardConnection.generated.h"
 
-class AANode;
+class ABoardNode;
 class UStaticMeshComponent;
 
 UCLASS()
-class PLAGUETALEGO_API AAConnection : public AActor
+class PLAGUETALEGO_API ABoardConnection : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AAConnection();
+	ABoardConnection();
 	
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	AANode* node1;
+	TObjectPtr<ABoardNode> NodeA;
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	AANode* node2;
+	TObjectPtr<ABoardNode> NodeB;
 
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	float m_connectionWidth = 0.2f;
+	float ConnectionWidth = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "0 - Parameters")
-	float m_zOffset = -1;
+	float ZOffset = -1;
 
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	float m_offsetFromNode = 0.2f;
+	float OffsetFromNode = 0.2f;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -44,8 +44,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	AANode* GetNode1() const;
-	AANode* GetNode2() const;
+	ABoardNode* GetNode1() const;
+	ABoardNode* GetNode2() const;
 
 	void ConnectNode();
 };

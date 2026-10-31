@@ -2,12 +2,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ANode.h"
-#include "PlagueTaleGO/Pawn/ABoardPawn.h"
+#include "BoardNode.h"
+#include "PlagueTaleGO/Entities/ABoardPawn.h"
 #include "EntitySpawnNode.generated.h"
 
 UCLASS()
-class PLAGUETALEGO_API AEntitySpawnNode : public AANode
+class PLAGUETALEGO_API AEntitySpawnNode : public ABoardNode
 {
 	GENERATED_BODY()
 

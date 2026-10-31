@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ANode.generated.h"
+#include "BoardNode.generated.h"
 
 class UStaticMeshComponent;
-class AAConnection;
+class ABoardConnection;
 
 UCLASS()
-class PLAGUETALEGO_API AANode : public AActor
+class PLAGUETALEGO_API ABoardNode : public AActor
 {
 	GENERATED_BODY()
 
@@ -22,15 +22,15 @@ private:
 	
 public:	
 	// Sets default values for this actor's properties
-	AANode();
+	ABoardNode();
 	// Ajoute la relation de voisinage (sans doublon, sans auto-référence)
-	void AddAdjacent(AANode* Other);
+	void AddAdjacent(ABoardNode* Other);
 	
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	TArray<AANode*> m_adjacentNodes;
+	TArray<ABoardNode*> AdjacentNodes;
 
 	UPROPERTY(EditAnywhere, Category= "0 - Parameters")
-	TArray<AAConnection*> m_connections;
+	TArray<ABoardConnection*> Connections;
 
 	bool IsOccupied() const;
 	void SetOccupied(bool bValue);
@@ -47,12 +47,12 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform& Transform);
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	bool IsConnectedTo(AANode* node);
+	bool IsConnectedTo(ABoardNode* node);
 
 };

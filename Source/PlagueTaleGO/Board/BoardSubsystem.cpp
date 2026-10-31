@@ -1,9 +1,9 @@
 ﻿// BoardSubsystem.cpp
 #include "BoardSubsystem.h"
-#include "../Pawn/ABoardPawn.h"
-#include "ANode.h"
+#include "../Entities/ABoardPawn.h"
+#include "BoardNode.h"
 
-void UBoardSubsystem::RegisterPawn(ABoardPawn* Entity, AANode* Node)
+void UBoardSubsystem::RegisterPawn(ABoardPawn* Entity, ABoardNode* Node)
 {
 	if (!Entity || !Node)
 	{
@@ -12,13 +12,13 @@ void UBoardSubsystem::RegisterPawn(ABoardPawn* Entity, AANode* Node)
 	Occupancy.FindOrAdd(Node).Entities.AddUnique(Entity);
 }
 
-bool UBoardSubsystem::IsOccupied(AANode* Node)
+bool UBoardSubsystem::IsOccupied(ABoardNode* Node)
 {
 	const FNodeOccupants* Found = Occupancy.Find(Node);
 	return Found && Found->Entities.Num() > 0;
 }
 
-EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, AANode* InTargetNode)
+EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, ABoardNode* InTargetNode)
 {
 	if (!Entity || !InTargetNode)
 	{
@@ -29,7 +29,7 @@ EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, AANode* InTargetNod
 		return EMoveResult::AlreadyMoving;
 	}
 	
-	AANode* FromNode = Entity->GetCurrentNode();
+	ABoardNode* FromNode = Entity->GetCurrentNode();
 
 	if (!FromNode)
 	{

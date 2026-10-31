@@ -1,13 +1,14 @@
 // BoardPlayerController.cpp
 #include "BoardPlayerController.h"
-#include "APlayerPawn.h"
-#include "../../Node/ANode.h"
-#include "PlagueTaleGO/GameMode/BoardGameMode.h"
+#include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
+#include "PlagueTaleGO/Board/BoardNode.h"
+#include "PlagueTaleGO/Core/BoardGameMode.h"
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/World.h"
+#include "PlagueTaleGO/PlagueTaleGO.h"
 
 void ABoardPlayerController::BeginPlay()
 {
@@ -53,7 +54,7 @@ void ABoardPlayerController::TryBindPlayerPawn()
 	{
 		PlayerPawn = *PlayerIt;
 		PlayerPawn->OnMoveFinished.AddDynamic(this, &ABoardPlayerController::HandlePlayerMoveFinished);
-		UE_LOG(LogTemp, Warning, TEXT("[Init] pion lié : %s, nœud=%s"),
+		UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[Init] pion lié : %s, nœud=%s"),
 			*GetNameSafe(PlayerPawn), *GetNameSafe(PlayerPawn->GetCurrentNode()));
 	}
 }
@@ -94,15 +95,15 @@ void ABoardPlayerController::HandleClick()
 		return;
 	}
 
-	AANode* ClickedNode = Cast<AANode>(Hit.GetActor());
+	ABoardNode* ClickedNode = Cast<ABoardNode>(Hit.GetActor());
 	if (!ClickedNode)
 	{
 		return;
 	}
 
 	const EMoveResult Result = PlayerPawn->RequestMove(ClickedNode);
-	UE_LOG(LogTemp, Warning, TEXT("[Click] nœud choisi : %s"), *GetNameSafe(ClickedNode));
-	UE_LOG(LogTemp, Warning, TEXT("Move result: %s"), *UEnum::GetValueAsString(Result));
+	UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[Click] nœud choisi : %s"), *GetNameSafe(ClickedNode));
+	UE_LOG(LogPlagueTaleGO, Verbose, TEXT("Move result: %s"), *UEnum::GetValueAsString(Result));
 }
 
 void ABoardPlayerController::HandlePlayerMoveFinished(ABoardPawn* MovedPawn)

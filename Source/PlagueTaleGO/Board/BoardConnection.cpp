@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AConnection.h"
-#include "ANode.h"
+#include "BoardConnection.h"
+#include "BoardNode.h"
 
 // Sets default values
-AAConnection::AAConnection()
+ABoardConnection::ABoardConnection()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NodeMesh"));
 	StaticMesh->SetupAttachment(RootComponent);
@@ -16,51 +16,51 @@ AAConnection::AAConnection()
 }
 
 // Called when the game starts or when spawned
-void AAConnection::BeginPlay()
+void ABoardConnection::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-void AAConnection::OnConstruction(const FTransform& Transform)
+void ABoardConnection::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (node1 == nullptr || node2 == nullptr) return;
+	if (NodeA == nullptr || NodeB == nullptr) return;
 
 	ConnectNode();
 }
 
 // Called every frame
-void AAConnection::Tick(float DeltaTime)
+void ABoardConnection::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
 
-AANode* AAConnection::GetNode1() const
+ABoardNode* ABoardConnection::GetNode1() const
 {
-	return node1;
+	return NodeA;
 }
 
-AANode* AAConnection::GetNode2() const
+ABoardNode* ABoardConnection::GetNode2() const
 {
-	return node2;
+	return NodeB;
 }
 
-void AAConnection::ConnectNode()
+void ABoardConnection::ConnectNode()
 {
-	if (!node1 || !node2 || !StaticMesh) return;
+	if (!NodeA || !NodeB || !StaticMesh) return;
 	
-	node1->AddAdjacent(node2);
-	node2->AddAdjacent(node1);
+	NodeA->AddAdjacent(NodeB);
+	NodeB->AddAdjacent(NodeA);
 	
 	FVector Start = GetNode1()->GetActorLocation();
 	FVector End = GetNode2()->GetActorLocation();
 
 	const FVector Direction = End - Start;
-	const float Distance = Direction.Length() - m_offsetFromNode;
+	const float Distance = Direction.Length() - OffsetFromNode;
 	FVector Midpoint = (Start + End) * 0.5f;
-	Midpoint.Z = m_zOffset;
+	Midpoint.Z = ZOffset;
 
 	if (Distance <= KINDA_SMALL_NUMBER)
 	{

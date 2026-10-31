@@ -3,10 +3,10 @@
 
 #include "CoreMinimal.h"
 #include "BoardTypes.h"
-#include "Runtime/Engine/Public/Subsystems/WorldSubsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 #include "BoardSubsystem.generated.h"
 
-class AANode;
+class ABoardNode;
 class ABoardPawn;
 
 // Un USTRUCT est nécessaire : UPROPERTY ne gère pas les conteneurs imbriqués
@@ -26,14 +26,14 @@ class PLAGUETALEGO_API UBoardSubsystem : public UWorldSubsystem
 
 public:
 	// Enregistre une entité présente sur un nœud au démarrage
-	void RegisterPawn(ABoardPawn* Pawn, AANode* Node);
+	void RegisterPawn(ABoardPawn* Pawn, ABoardNode* Node);
 
 	// Seule autorité : valide, met à jour l'occupation, lance le déplacement
-	EMoveResult TryMovePawn(ABoardPawn* Pawn, AANode* InTargetNode);
+	EMoveResult TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode);
 
-	bool IsOccupied(AANode* Node);
+	bool IsOccupied(ABoardNode* Node);
 
 private:
 	UPROPERTY()
-	TMap<TObjectPtr<AANode>, FNodeOccupants> Occupancy;
+	TMap<TObjectPtr<ABoardNode>, FNodeOccupants> Occupancy;
 };

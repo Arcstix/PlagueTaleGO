@@ -2,11 +2,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../ABoardPawn.h"
-#include "../../Node/BoardTypes.h"
+#include "PlagueTaleGO/Entities/ABoardPawn.h"
+#include "PlagueTaleGO/Board/BoardTypes.h"
 #include "APlayerPawn.generated.h"
 
-class AANode;
+class ABoardNode;
 
 UCLASS()
 class PLAGUETALEGO_API APlayerPawn : public ABoardPawn
@@ -16,5 +16,5 @@ class PLAGUETALEGO_API APlayerPawn : public ABoardPawn
 public:
 	// Demande au Board la permission de se déplacer
 	UFUNCTION(BlueprintCallable, Category = "Board|Player")
-	EMoveResult RequestMove(AANode* InTargetNode);
+	EMoveResult RequestMove(ABoardNode* InTargetNode);
 };

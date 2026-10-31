@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "PlagueTaleGO/FSM/StateBase.h"
+#include "PlagueTaleGO/Turns/StateBase.h"
 #include "BoardGameMode.generated.h"
 
 /**
@@ -17,10 +17,10 @@ class PLAGUETALEGO_API ABoardGameMode : public AGameModeBase
 	
 	protected:
 	UPROPERTY()
-	TObjectPtr<UStateBase> actualState;
+	TObjectPtr<UStateBase> CurrentState;
 	
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UStateBase> firstState;
+	TSubclassOf<UStateBase> FirstState;
 	
 	virtual void BeginPlay() override;
 	

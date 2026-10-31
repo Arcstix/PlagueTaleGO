@@ -2,7 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PlagueTaleGO/FSM/StateBase.h"
+#include "PlagueTaleGO/Turns/StateBase.h"
 #include "PlayerTurnState.generated.h"
 
 UCLASS()

@@ -1,9 +1,9 @@
 // BoardPawn.cpp
 #include "ABoardPawn.h"
-#include "../Node/ANode.h"
+#include "PlagueTaleGO/Board/BoardNode.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
-#include "PlagueTaleGO/Node/BoardSubsystem.h"
+#include "PlagueTaleGO/Board/BoardSubsystem.h"
 
 ABoardPawn::ABoardPawn()
 {
@@ -18,7 +18,7 @@ ABoardPawn::ABoardPawn()
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void ABoardPawn::SnapToNode(AANode* Node)
+void ABoardPawn::SnapToNode(ABoardNode* Node)
 {
 	if (!Node)
 	{
@@ -34,7 +34,7 @@ void ABoardPawn::SnapToNode(AANode* Node)
 	}
 }
 
-void ABoardPawn::BeginMove(AANode* InTargetNode)
+void ABoardPawn::BeginMove(ABoardNode* InTargetNode)
 {
 	if (!InTargetNode || IsMoving())
 	{

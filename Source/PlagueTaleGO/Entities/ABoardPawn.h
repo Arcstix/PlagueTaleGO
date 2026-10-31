@@ -3,10 +3,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../Node/BoardTypes.h"
+#include "PlagueTaleGO/Board/BoardTypes.h"
 #include "ABoardPawn.generated.h"
 
-class AANode;
+class ABoardNode;
 class UStaticMeshComponent;
 class ABoardPawn;
 
@@ -19,17 +19,17 @@ class PLAGUETALEGO_API ABoardPawn : public AActor
 
 public:
 	ABoardPawn();
-	void SnapToNode(AANode* Node);
+	void SnapToNode(ABoardNode* Node);
 
 	// Suppose la case déjà validée par le Board
 	UFUNCTION(BlueprintCallable, Category = "Board")
-	void BeginMove(AANode* InTargetNode);
+	void BeginMove(ABoardNode* InTargetNode);
 
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool IsMoving() const { return State == EBoardPawnState::Moving; }
 
 	UFUNCTION(BlueprintPure, Category = "Board")
-	AANode* GetCurrentNode() const { return CurrentNode; }
+	ABoardNode* GetCurrentNode() const { return CurrentNode; }
 
 	UPROPERTY(BlueprintAssignable, Category = "Board")
 	FOnEntityMoveFinished OnMoveFinished;
@@ -41,13 +41,13 @@ protected:
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<AANode> CurrentNode;
+	TObjectPtr<ABoardNode> CurrentNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<AANode> LastNode;
+	TObjectPtr<ABoardNode> LastNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<AANode> TargetNode;
+	TObjectPtr<ABoardNode> TargetNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
 	EBoardPawnState State = EBoardPawnState::Idle;

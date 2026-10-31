@@ -1,9 +1,9 @@
 // PlayerPawn.cpp
 #include "APlayerPawn.h"
-#include "../../Node/BoardSubsystem.h"
+#include "PlagueTaleGO/Board/BoardSubsystem.h"
 #include "Engine/World.h"
 
-EMoveResult APlayerPawn::RequestMove(AANode* InTargetNode)
+EMoveResult APlayerPawn::RequestMove(ABoardNode* InTargetNode)
 {
 	UWorld* World = GetWorld();
 	if (!World)
