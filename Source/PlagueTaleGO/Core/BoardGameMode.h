@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "PlagueTaleGO/Turns/StateBase.h"
 #include "BoardGameMode.generated.h"
 
 class APlayerPawn;
@@ -24,25 +23,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Board")
 	APlayerPawn* GetPlayerPawn() const { return PlayerPawn; }
 
-	void StartStateMachineOnStart();
-	void DebugLogActualState();
-	bool CanPlayerAct() const;
-	void GoToNextState();
-	
-protected:
-	UPROPERTY()
-	TObjectPtr<UStateBase> CurrentState;
-	
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UStateBase> FirstState;
-	
-	virtual void BeginPlay() override;
-
 private:
 	// Parcourt les cases et crée chaque StartingEntity sur sa case
 	void SpawnBoardEntities();
 	
-	// Le pion joueur créé au démarrage (servira à la tâche 25)
+	// Le pion joueur créé au démarrage
 	UPROPERTY()
 	TObjectPtr<APlayerPawn> PlayerPawn;
 	

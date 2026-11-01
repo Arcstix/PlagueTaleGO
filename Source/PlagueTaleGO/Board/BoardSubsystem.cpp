@@ -19,6 +19,7 @@ void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
 	NodesByCoord.Reset();
 	Occupancy.Reset();
+	PawnToNode.Reset();
 
 	// 1. Le Board du niveau (grille + liens bloqués)
 	TActorIterator<ABoard> BoardIt(&InWorld);
@@ -106,7 +107,23 @@ void UBoardSubsystem::RegisterPawn(ABoardPawn* Entity, ABoardNode* Node)
 	{
 		return;
 	}
-	Occupancy.FindOrAdd(Node).Entities.AddUnique(Entity);
+	SetPawnNode(Entity, Node);
+}
+
+void UBoardSubsystem::UnregisterPawn(ABoardPawn* Pawn)
+{
+	if (!Pawn)
+	{
+		return;
+	}
+	// nullptr = libère la case occupée et retire le pion de PawnToNode
+	SetPawnNode(Pawn, nullptr);
+}
+
+ABoardNode* UBoardSubsystem::GetPawnNode(const ABoardPawn* Pawn) const
+{
+	ABoardNode* Found = PawnToNode.FindRef(Pawn);
+	return Found ? Found : nullptr;
 }
 
 bool UBoardSubsystem::IsOccupied(const ABoardNode* Node) const
@@ -115,18 +132,122 @@ bool UBoardSubsystem::IsOccupied(const ABoardNode* Node) const
 	return Found && Found->Entities.Num() > 0;
 }
 
-EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, ABoardNode* InTargetNode)
+ABoardPawn* UBoardSubsystem::GetPawnOn(const ABoardNode* Node) const
 {
-	if (!Entity || !InTargetNode)
+	const FNodeOccupants* Found = Occupancy.Find(Node);
+	if (!Found || Found->Entities.Num() == 0)
+	{
+		return nullptr;
+	}
+	// Une seule entité par case pour l'instant : on renvoie la première
+	return Found->Entities[0];
+}
+
+bool UBoardSubsystem::IsExit(const ABoardNode* Node) const
+{
+	return Node && Node->IsExit();
+}
+
+TArray<ABoardNode*> UBoardSubsystem::FindPath(ABoardNode* From, ABoardNode* To, bool bAvoidOccupied) const
+{
+	TArray<ABoardNode*> Path;
+	if (!From || !To || From == To || To->IsBlocked())
+	{
+		return Path;
+	}
+
+	// File d'attente du parcours (on avance avec un index plutôt que de retirer en tête)
+	TArray<ABoardNode*> Queue = { From };
+
+	// Pour chaque case visitée : la case d'où l'on vient (sert à reconstruire le chemin)
+	TMap<ABoardNode*, ABoardNode*> CameFrom;
+	CameFrom.Add(From, nullptr);
+
+	bool bFound = false;
+
+	for (int32 Index = 0; Index < Queue.Num() && !bFound; ++Index)
+	{
+		ABoardNode* Current = Queue[Index];
+
+		// GetNeighbors applique déjà la règle des 4 directions et des liens bloqués
+		for (ABoardNode* Next : GetNeighbors(Current))
+		{
+			if (CameFrom.Contains(Next))
+			{
+				continue;   // déjà visitée
+			}
+			if (Next != To)
+			{
+				if (Next->IsBlocked())
+				{
+					continue;
+				}
+				if (bAvoidOccupied && IsOccupied(Next))
+				{
+					continue;
+				}
+			}
+
+			CameFrom.Add(Next, Current);
+
+			if (Next == To)
+			{
+				bFound = true;
+				break;
+			}
+			Queue.Add(Next);
+		}
+	}
+
+	if (!bFound)
+	{
+		return Path;   // aucun chemin
+	}
+
+	// Remonte de l'arrivée vers le départ, puis remet dans l'ordre
+	for (ABoardNode* Step = To; Step && Step != From; Step = CameFrom[Step])
+	{
+		Path.Add(Step);
+	}
+	Algo::Reverse(Path);
+	return Path;
+}
+
+void UBoardSubsystem::SetPawnNode(ABoardPawn* Pawn, ABoardNode* NewNode)
+{
+	// Libère l'ancienne case
+	if (ABoardNode* OldNode = GetPawnNode(Pawn))
+	{
+		if (FNodeOccupants* OldOccupants = Occupancy.Find(OldNode))
+		{
+			OldOccupants->Entities.Remove(Pawn);
+		}
+	}
+
+	// Occupe la nouvelle (nullptr = le pion quitte le plateau)
+	if (NewNode)
+	{
+		PawnToNode.Add(Pawn, NewNode);
+		Occupancy.FindOrAdd(NewNode).Entities.AddUnique(Pawn);
+	}
+	else
+	{
+		PawnToNode.Remove(Pawn);
+	}
+}
+
+EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode)
+{
+	if (!Pawn || !InTargetNode)
 	{
 		return EMoveResult::Blocked;
 	}
-	if (Entity->IsMoving())
+	if (Pawn->IsMoving())
 	{
 		return EMoveResult::AlreadyMoving;
 	}
 	
-	ABoardNode* FromNode = Entity->GetCurrentNode();
+	ABoardNode* FromNode = GetPawnNode(Pawn);
 
 	if (!FromNode)
 	{
@@ -145,13 +266,7 @@ EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Entity, ABoardNode* InTarge
 		return EMoveResult::Occupied;
 	}
 
-	// Libère l'ancienne case, occupe la nouvelle
-	if (FNodeOccupants* FromOccupants = Occupancy.Find(FromNode))
-	{
-		FromOccupants->Entities.Remove(Entity);
-	}
-	Occupancy.FindOrAdd(InTargetNode).Entities.AddUnique(Entity);
-
-	Entity->BeginMove(InTargetNode);
+	SetPawnNode(Pawn, InTargetNode);
+	Pawn->BeginMove(InTargetNode);
 	return EMoveResult::Accepted;
 }

@@ -47,15 +47,49 @@ public:
 	// Enregistre une entité présente sur un nœud au démarrage
 	void RegisterPawn(ABoardPawn* Pawn, ABoardNode* Node);
 
+	// Retire un pion du plateau (détruit, mort, capturé…) : libère sa case
+	void UnregisterPawn(ABoardPawn* Pawn);
+
+	// Case sur laquelle se trouve un pion (sa case d'arrivée s'il est en mouvement)
+	UFUNCTION(BlueprintPure, Category = "Board")
+	ABoardNode* GetPawnNode(const ABoardPawn* Pawn) const;
+
 	// Seule autorité : valide, met à jour l'occupation, lance le déplacement
 	EMoveResult TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode);
 
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool IsOccupied(const ABoardNode* Node) const;
 
+	// --- Requêtes ---
+	// Pion présent sur la case, ou nullptr si elle est libre
+	UFUNCTION(BlueprintPure, Category = "Board")
+	ABoardPawn* GetPawnOn(const ABoardNode* Node) const;
+
+	// Vrai si la case est une case de fin
+	UFUNCTION(BlueprintPure, Category = "Board")
+	bool IsExit(const ABoardNode* Node) const;
+
+	/**
+	 * Chemin le plus court de From à To (parcours en largeur), en respectant
+	 * les liens bloqués et les cases bloquées.
+	 * Renvoie les cases à traverser SANS la case de départ, AVEC l'arrivée :
+	 * Path[0] = prochain pas. Tableau vide = pas de chemin (ou From == To).
+	 * bAvoidOccupied : contourne les cases occupées (sauf l'arrivée, pour
+	 * qu'un ennemi puisse viser la case du joueur).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Board")
+	TArray<ABoardNode*> FindPath(ABoardNode* From, ABoardNode* To, bool bAvoidOccupied = false) const;
+
 private:
+	// Seul endroit qui change la position d'un pion : met à jour
+	// PawnToNode ET Occupancy ensemble, pour qu'ils ne divergent jamais
+	void SetPawnNode(ABoardPawn* Pawn, ABoardNode* NewNode);
+	
 	UPROPERTY()
 	TObjectPtr<ABoard> Board;
+
+	UPROPERTY()
+	TMap<ABoardPawn*, ABoardNode*> PawnToNode;
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ABoardNode>> NodesByCoord;

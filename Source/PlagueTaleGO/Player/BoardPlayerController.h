@@ -7,9 +7,12 @@
 
 class UInputAction;
 class UInputMappingContext;
-class APlayerPawn;
-class ABoardPawn;
+class ABoardNode;
 
+/**
+ * Transforme les entrées du joueur en intentions pour UGameFlowSubsystem.
+ * Ne contient AUCUNE logique de tour : il ne sait pas dans quel état est la partie.
+ */
 UCLASS()
 class PLAGUETALEGO_API ABoardPlayerController : public APlayerController
 {
@@ -17,27 +20,22 @@ class PLAGUETALEGO_API ABoardPlayerController : public APlayerController
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void PlayerTick(float DeltaTime) override;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> JumpInputAction;
+	virtual void SetupInputComponent() override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "MappingContext")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
-	virtual void SetupInputComponent() override;
-	
+	// Clic gauche / toucher : choisir une case
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> SelectAction;
+
+	// Tag de la caméra du plateau à placer dans le niveau
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	FName BoardCameraTag = TEXT("BoardCamera");
+
 private:
-	void HandleClick();
-	void TryBindPlayerPawn();
+	void HandleSelect();
+	void SetupBoardCamera();
 
-	// UFUNCTION obligatoire pour pouvoir utiliser AddDynamic
-	UFUNCTION()
-	void HandlePlayerMoveFinished(ABoardPawn* MovedPawn);
-
-	UPROPERTY()
-	TObjectPtr<APlayerPawn> PlayerPawn;
-
-public:
-	void PressJump();
+	ABoardNode* GetNodeUnderCursor() const;
 };

@@ -88,12 +88,6 @@ void ABoard::ToggleLinkBetweenSelectedNodes()
 #endif
 }
 
-
-
-void ABoard::ValidateBoard()
-{
-}
-
 void ABoard::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);

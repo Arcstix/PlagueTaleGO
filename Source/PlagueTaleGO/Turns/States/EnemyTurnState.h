@@ -3,17 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../StateBase.h"
+#include "PlagueTaleGO/Turns/GameFlowState.h"
 #include "EnemyTurnState.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PLAGUETALEGO_API UEnemyTurnState : public UStateBase
+class PLAGUETALEGO_API UEnemyTurnState : public UGameFlowState
 {
 	GENERATED_BODY()
 	
-	public:
-	virtual TSubclassOf<UStateBase> GetNextState() override;
+public:
+	virtual void Enter() override;
 };

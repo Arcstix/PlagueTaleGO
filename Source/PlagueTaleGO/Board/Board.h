@@ -43,8 +43,8 @@ public:
 	
 	bool IsLinkBlocked(FIntPoint A, FIntPoint B) const;
 
-    UFUNCTION(CallInEditor, Category = "Édition") void ToggleLinkBetweenSelectedNodes(); // sélectionner 2 cases → bloquer/débloquer
-    UFUNCTION(CallInEditor, Category = "Édition") void ValidateBoard();
+    UFUNCTION(CallInEditor, Category = "Board|Édition")
+	void ToggleLinkBetweenSelectedNodes(); // sélectionner 2 cases → bloquer/débloquer
 	
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;

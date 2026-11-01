@@ -24,8 +24,7 @@ void ABoardPawn::SnapToNode(ABoardNode* Node)
 	{
 		return;
 	}
-
-	CurrentNode = Node;
+	
 	SetActorLocation(Node->GetActorLocation());
 
 	if (UBoardSubsystem* Board = GetWorld()->GetSubsystem<UBoardSubsystem>())
@@ -50,6 +49,28 @@ void ABoardPawn::BeginMove(ABoardNode* InTargetNode)
 	SetActorTickEnabled(true);
 }
 
+ABoardNode* ABoardPawn::GetCurrentNode() const
+{
+	const UWorld* World = GetWorld();
+	const UBoardSubsystem* Board = World ? World->GetSubsystem<UBoardSubsystem>() : nullptr;
+	return Board ? Board->GetPawnNode(this) : nullptr;
+}
+
+
+void ABoardPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Le pion quitte le jeu : il ne doit plus occuper sa case
+	if (UWorld* World = GetWorld())
+	{
+		if (UBoardSubsystem* Board = World->GetSubsystem<UBoardSubsystem>())
+		{
+			Board->UnregisterPawn(this);
+		}
+	}
+	
+	Super::EndPlay(EndPlayReason);
+}
+
 void ABoardPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -72,10 +93,25 @@ void ABoardPawn::Tick(float DeltaSeconds)
 	}
 }
 
+EMoveResult ABoardPawn::RequestMove(ABoardNode* InTargetNode)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return EMoveResult::Blocked;
+	}
+
+	UBoardSubsystem* Board = World->GetSubsystem<UBoardSubsystem>();
+	if (!Board)
+	{
+		return EMoveResult::Blocked;
+	}
+
+	return Board->TryMovePawn(this, InTargetNode);
+}
+
 void ABoardPawn::CompleteMove()
 {
-	LastNode = CurrentNode;
-	CurrentNode = TargetNode;
 	TargetNode = nullptr;
 	State = EBoardPawnState::Idle;
 

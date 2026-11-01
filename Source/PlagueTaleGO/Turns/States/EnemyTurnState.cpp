@@ -2,9 +2,9 @@
 
 
 #include "EnemyTurnState.h"
-#include "ItemInputState.h"
 
-TSubclassOf<UStateBase> UEnemyTurnState::GetNextState()
+void UEnemyTurnState::Enter()
 {
-	return UItemInputState::StaticClass();
+	// A venir : faire jouer chaque ennemi, puis Finish()
+	Finish();
 }

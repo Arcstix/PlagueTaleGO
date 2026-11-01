@@ -2,13 +2,13 @@
 
 
 #include "BoardGameMode.h"
-#include "PlagueTaleGO/Turns/StateBase.h"
 #include "PlagueTaleGO/Entities/ABoardPawn.h"
 #include "PlagueTaleGO/Board/BoardNode.h"
 #include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
+#include "PlagueTaleGO/Turns/GameFlowSubsystem.h"
 
 void ABoardGameMode::StartPlay()
 {
@@ -18,14 +18,16 @@ void ABoardGameMode::StartPlay()
 	Super::StartPlay();
 
 	SpawnBoardEntities();
-}
 
-void ABoardGameMode::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	StartStateMachineOnStart();
-	
+	// 3. Lance la machine à états : StartState → PlayerMoveState…
+	UGameFlowSubsystem* GameFlow = GetWorld()->GetSubsystem<UGameFlowSubsystem>();
+	if (!GameFlow)
+	{
+		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameMode] UGameFlowSubsystem introuvable : partie non lancée."));
+		return;
+	}
+
+	GameFlow->StartGame(PlayerPawn);
 }
 
 void ABoardGameMode::SpawnBoardEntities()
@@ -85,54 +87,5 @@ void ABoardGameMode::SpawnBoardEntities()
 	if (!PlayerPawn)
 	{
 		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameMode] Aucun départ joueur dans le niveau."));
-	}
-}
-
-void ABoardGameMode::StartStateMachineOnStart()
-{
-	if (FirstState)
-	{
-		CurrentState = NewObject<UStateBase>(this, FirstState);
-		DebugLogActualState();
-		CurrentState->EnterState();
-		
-	}
-}
-
-void ABoardGameMode::DebugLogActualState()
-{
-	if (!CurrentState) return;
-	
-	UE_LOG(LogPlagueTaleGO, Log, TEXT("État courant : %s"), *CurrentState->GetName());
-
-#if !UE_BUILD_SHIPPING
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, 
-			CurrentState->GetName());
-	}
-#endif
-}
-
-bool ABoardGameMode::CanPlayerAct() const
-{
-	return CurrentState && CurrentState->AllowsPlayerInput();
-}
-
-void ABoardGameMode::GoToNextState()
-{
-	if (CurrentState)
-	{
-		TSubclassOf<UStateBase> nextState = CurrentState->GetNextState();
-		if (nextState)
-		{
-			CurrentState->ExitState();
-			CurrentState = NewObject<UStateBase>(this, nextState);
-			CurrentState->EnterState();
-		
-			DebugLogActualState();
-		}
-		
-		
 	}
 }

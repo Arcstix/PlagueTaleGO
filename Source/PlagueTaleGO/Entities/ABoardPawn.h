@@ -29,22 +29,21 @@ public:
 	bool IsMoving() const { return State == EBoardPawnState::Moving; }
 
 	UFUNCTION(BlueprintPure, Category = "Board")
-	ABoardNode* GetCurrentNode() const { return CurrentNode; }
+	ABoardNode* GetCurrentNode() const;
+
+	// Demande au Board la permission de se déplacer
+	UFUNCTION(BlueprintCallable, Category = "Board|Player")
+	EMoveResult RequestMove(ABoardNode* InTargetNode);
 
 	UPROPERTY(BlueprintAssignable, Category = "Board")
 	FOnEntityMoveFinished OnMoveFinished;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board")
 	TObjectPtr<UStaticMeshComponent> Mesh;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<ABoardNode> CurrentNode;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
-	TObjectPtr<ABoardNode> LastNode;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Board")
 	TObjectPtr<ABoardNode> TargetNode;
