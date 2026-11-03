@@ -9,7 +9,7 @@
 - **Deadline : janvier 2027.**
 - **Unreal Engine 5.8** (5.8.3), C++, un seul module runtime : `PlagueTaleGO`.
 - **Cible : Desktop uniquement**, contrôle à la souris.
-- L'équipe découvre UE et le C++ cette année : préférer une solution **simple, lisible et rapide à livrer** à la plus optimale. Commenter tout mécanisme UE non évident.
+- L'équipe découvre UE et le C++ cette année : Commenter tout mécanisme UE non évident.
 - Les **mécaniques ne sont pas figées**. Ne pas inventer de règle de jeu : en cas de doute sur une mécanique, **demander plutôt que supposer**.
 
 ## Travailler sur ce dépôt depuis l'app Claude
