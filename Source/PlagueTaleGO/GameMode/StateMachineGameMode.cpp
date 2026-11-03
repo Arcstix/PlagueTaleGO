@@ -29,8 +29,23 @@ void AStateMachineGameMode::DebugLogActualState()
 {
 	if (actualState)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, 
-			actualState->GetName());
+		// Efface les logs de l'état précédent
+		GEngine->ClearOnScreenDebugMessages();
+
+		// Etat "sonde" : copie jetable de l'état actuel, pour simuler un input sans toucher au vrai état
+		UStateBase* primaryProbe = NewObject<UStateBase>(this, actualState->GetClass());
+		primaryProbe->PrimaryInput();
+
+		UStateBase* secondaryProbe = NewObject<UStateBase>(this, actualState->GetClass());
+		secondaryProbe->SecondaryInput();
+
+		// Affichés en premier pour que l'état actuel apparaisse au-dessus
+		GEngine->AddOnScreenDebugMessage(-1, 120.0f, FColor::Cyan,
+			FString::Printf(TEXT("  [E] Secondary Input -> %s"), *GetNameSafe(secondaryProbe->GetNextState())));
+		GEngine->AddOnScreenDebugMessage(-1, 120.0f, FColor::Green,
+			FString::Printf(TEXT("  [Space] Primary Input -> %s"), *GetNameSafe(primaryProbe->GetNextState())));
+		GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Red,
+			FString::Printf(TEXT("Etat actuel : %s"), *actualState->GetName()));
 	}
 }
 
