@@ -5,13 +5,8 @@
 #include "BoardNode.h"
 #include "../Entities/ABoardPawn.h"
 #include "PlagueTaleGO/PlagueTaleGO.h"
+#include "PlagueTaleGO/Level/Validation/BoardValidator.h"
 #include "EngineUtils.h"
-
-namespace
-{
-	// Les 4 directions de la grille : est, ouest, nord, sud
-	const FIntPoint GridDirections[] = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-}
 
 void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -21,7 +16,7 @@ void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	Occupancy.Reset();
 	PawnToNode.Reset();
 
-	// 1. Le Board du niveau (grille + liens bloqués)
+	// 1. Le Board du niveau (grille + layout)
 	TActorIterator<ABoard> BoardIt(&InWorld);
 	Board = BoardIt ? *BoardIt : nullptr;
 	if (!Board)
@@ -45,8 +40,30 @@ void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 		NodesByCoord.Add(Coord, Node);
 	}
 
-	UE_LOG(LogPlagueTaleGO, Log, TEXT("[Board] Graphe construit : %d cases, %d liens bloqués."),
-		NodesByCoord.Num(), Board->BlockedLinks.Num());
+	const FBoardLayout& Layout = Board->GetLayout();
+	UE_LOG(LogPlagueTaleGO, Log, TEXT("[Board] Graphe construit : %d cases, %d liens."),
+		NodesByCoord.Num(), Layout.Links.Num());
+
+	// 3. Les acteurs de la scène doivent correspondre au layout (générés au Submit du Level Editor)
+	for (const FBoardCell& Cell : Layout.Cells)
+	{
+		if (!NodesByCoord.Contains(Cell.Coord))
+		{
+			UE_LOG(LogPlagueTaleGO, Error, TEXT("[Board] La case (%d, %d) du layout n'a pas d'acteur : niveau non synchronisé (refaire un Submit ou BoardEditor.Resync)."),
+				Cell.Coord.X, Cell.Coord.Y);
+		}
+	}
+	for (const TPair<FIntPoint, TObjectPtr<ABoardNode>>& Pair : NodesByCoord)
+	{
+		if (!Layout.HasCell(Pair.Key))
+		{
+			UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Board] %s (%d, %d) n'existe pas dans le layout : elle n'a aucun lien."),
+				*GetNameSafe(Pair.Value), Pair.Key.X, Pair.Key.Y);
+		}
+	}
+
+	// 4. Mêmes règles que le Submit du Level Editor : utile si un niveau a été soumis en « forçant »
+	FBoardValidator::LogResult(FBoardValidator::Validate(Layout), TEXT("Lancement de la partie"));
 }
 
 ABoardNode* UBoardSubsystem::GetNodeAt(FIntPoint Coord) const
@@ -65,20 +82,14 @@ bool UBoardSubsystem::AreLinked(const ABoardNode* A, const ABoardNode* B) const
 	const FIntPoint CoordA = A->GetGridCoord();
 	const FIntPoint CoordB = B->GetGridCoord();
 
-	// Voisines = exactement 1 case d'écart, sur X ou sur Y (pas en diagonale)
-	const FIntPoint Delta = CoordB - CoordA;
-	if (FMath::Abs(Delta.X) + FMath::Abs(Delta.Y) != 1)
-	{
-		return false;
-	}
-
 	// Les deux cases doivent être celles enregistrées (pas une case en doublon ignorée)
 	if (GetNodeAt(CoordA) != A || GetNodeAt(CoordB) != B)
 	{
 		return false;
 	}
 
-	return !Board->IsLinkBlocked(CoordA, CoordB);
+	// Liens explicites : le layout garantit déjà qu'un lien relie deux voisines orthogonales
+	return Board->HasLink(CoordA, CoordB);
 }
 
 TArray<ABoardNode*> UBoardSubsystem::GetNeighbors(const ABoardNode* Node) const
@@ -89,11 +100,9 @@ TArray<ABoardNode*> UBoardSubsystem::GetNeighbors(const ABoardNode* Node) const
 		return Result;
 	}
 
-	const FIntPoint Coord = Node->GetGridCoord();
-	for (const FIntPoint& Dir : GridDirections)
+	for (const FIntPoint& OtherCoord : Board->GetLayout().GetLinkedCoords(Node->GetGridCoord()))
 	{
-		ABoardNode* Other = GetNodeAt(Coord + Dir);
-		if (Other && !Board->IsLinkBlocked(Coord, Coord + Dir))
+		if (ABoardNode* Other = GetNodeAt(OtherCoord))
 		{
 			Result.Add(Other);
 		}
@@ -169,7 +178,7 @@ TArray<ABoardNode*> UBoardSubsystem::FindPath(ABoardNode* From, ABoardNode* To, 
 	{
 		ABoardNode* Current = Queue[Index];
 
-		// GetNeighbors applique déjà la règle des 4 directions et des liens bloqués
+		// GetNeighbors ne renvoie que les cases reliées par un lien
 		for (ABoardNode* Next : GetNeighbors(Current))
 		{
 			if (CameFrom.Contains(Next))

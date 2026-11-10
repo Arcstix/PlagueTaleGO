@@ -7,9 +7,13 @@
 #include "BoardGameMode.generated.h"
 
 class APlayerPawn;
+class UBoardSubsystem;
+struct FBoardCell;
+struct FBoardEntityPlacement;
 
 /**
- * 
+ * GameMode des niveaux de plateau : crée les pions de départ décrits par le layout
+ * du ABoard, puis lance la machine à états (UGameFlowSubsystem).
  */
 UCLASS()
 class PLAGUETALEGO_API ABoardGameMode : public AGameModeBase
@@ -24,8 +28,11 @@ public:
 	APlayerPawn* GetPlayerPawn() const { return PlayerPawn; }
 
 private:
-	// Parcourt les cases et crée chaque StartingEntity sur sa case
+	// Parcourt les cases du layout et crée chaque entité de départ sur sa case
 	void SpawnBoardEntities();
+
+	// Crée un pion de départ, lui transmet ses réglages et l'enregistre sur sa case
+	void SpawnEntity(const FBoardCell& Cell, const FBoardEntityPlacement& Placement, UBoardSubsystem& BoardSubsystem);
 	
 	// Le pion joueur créé au démarrage
 	UPROPERTY()
