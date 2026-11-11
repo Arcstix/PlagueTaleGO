@@ -1,0 +1,273 @@
+﻿#include "BoardEditorMode.h"
+#include "BoardEditorModeCommands.h"
+#include "BoardEditorModeToolkit.h"
+#include "BoardLayoutDraft.h"
+#include "PlagueTaleGOEditor/PlagueTaleGOEditor.h"
+#include "PlagueTaleGOEditor/Sync/BoardLayoutSync.h"
+#include "PlagueTaleGOEditor/Tools/BoardEditTool.h"
+#include "PlagueTaleGO/Board/Board.h"
+#include "PlagueTaleGO/Level/Validation/BoardValidator.h"
+#include "Editor.h"                  // GEditor, FEditorDelegates
+#include "LevelEditorViewport.h"     // FLevelEditorViewportClient, GCurrentLevelEditingViewportClient
+#include "UnrealClient.h"            // FViewport
+#include "InteractiveToolManager.h"
+#include "Misc/MessageDialog.h"
+
+const FEditorModeID UBoardEditorMode::ModeId = TEXT("EM_BoardEditorMode");
+const FString UBoardEditorMode::EditToolName = TEXT("BoardEditTool");
+
+UBoardEditorMode::UBoardEditorMode()
+{
+	// Nom et visibilité dans le menu des modes de l'éditeur
+	Info = FEditorModeInfo(ModeId, INVTEXT("Plateau"), FSlateIcon(), /*bIsVisible*/ true);
+}
+
+void UBoardEditorMode::Enter()
+{
+	// Crée le panneau (toolkit) et le contexte des outils
+	Super::Enter();
+
+	bIsExiting = false;
+	bRestartToolPending = false;
+
+	Draft = NewObject<UBoardLayoutDraft>(this);
+
+	// L'outil est enregistré même sans Board : son bouton existe, mais il ne démarre pas (CanBuildTool)
+	UBoardEditToolBuilder* Builder = NewObject<UBoardEditToolBuilder>(this);
+	Builder->Mode = this;
+	RegisterTool(FBoardEditorModeCommands::Get().EditTool, EditToolName, Builder);
+
+	UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+	ABoard* Board = FBoardLayoutSync::FindBoard(World);
+	if (!Board)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok,
+			INVTEXT("Aucun BP_Board dans ce niveau.\n\nPlacer un BP_Board (origine de la grille), puis rouvrir le mode « Plateau »."));
+		return;
+	}
+
+	Draft->ResetFromBoard(Board);
+
+	// Vue d'ensemble : caméra à la verticale du plateau (la vue d'avant est rétablie à la sortie)
+	SaveCamera();
+	FrameBoardFromTop();
+
+	StartEditTool();
+
+	MapLoadHandle = FEditorDelegates::OnMapLoad.AddUObject(this, &UBoardEditorMode::HandleMapLoad);
+}
+
+void UBoardEditorMode::Exit()
+{
+	bIsExiting = true;
+
+	FEditorDelegates::OnMapLoad.Remove(MapLoadHandle);
+	MapLoadHandle.Reset();
+
+	// Avant Super::Exit, qui arrête l'outil : le Board et le brouillon sont encore là
+	AskAboutPendingDraft();
+
+	Super::Exit();
+	Draft = nullptr;
+
+	RestoreCamera();
+}
+
+void UBoardEditorMode::CreateToolkit()
+{
+	Toolkit = MakeShareable(new FBoardEditorModeToolkit);
+}
+
+TMap<FName, TArray<TSharedPtr<FUICommandInfo>>> UBoardEditorMode::GetModeCommands() const
+{
+	return FBoardEditorModeCommands::GetCommands();
+}
+
+void UBoardEditorMode::StartEditTool()
+{
+	GetToolManager()->SelectActiveToolType(EToolSide::Left, EditToolName);
+	GetToolManager()->ActivateTool(EToolSide::Left);
+}
+
+void UBoardEditorMode::OnToolEnded(UInteractiveToolManager* Manager, UInteractiveTool* Tool)
+{
+	Super::OnToolEnded(Manager, Tool);
+
+	// Échap (hors tracé) ou le bouton de la barre d'outils arrêtent l'outil. Le relancer tout de suite,
+	// pendant son propre arrêt, serait risqué : on le fait au prochain tick du mode.
+	if (!bIsExiting && Cast<UBoardEditTool>(Tool))
+	{
+		bRestartToolPending = true;
+	}
+}
+
+void UBoardEditorMode::ModeTick(float DeltaTime)
+{
+	Super::ModeTick(DeltaTime);
+
+	if (bRestartToolPending && !bIsExiting)
+	{
+		bRestartToolPending = false;
+		if (Draft && Draft->GetBoard() && !GetToolManager()->HasActiveTool(EToolSide::Left))
+		{
+			StartEditTool();
+		}
+	}
+}
+
+UBoardEditTool* UBoardEditorMode::GetEditTool() const
+{
+	return Cast<UBoardEditTool>(GetToolManager()->GetActiveTool(EToolSide::Left));
+}
+
+FLevelEditorViewportClient* UBoardEditorMode::FindPerspectiveViewport()
+{
+	if (GCurrentLevelEditingViewportClient && GCurrentLevelEditingViewportClient->IsPerspective())
+	{
+		return GCurrentLevelEditingViewportClient;
+	}
+	if (GEditor)
+	{
+		for (FLevelEditorViewportClient* Client : GEditor->GetLevelViewportClients())
+		{
+			if (Client && Client->IsPerspective())
+			{
+				return Client;
+			}
+		}
+	}
+	return nullptr;
+}
+
+void UBoardEditorMode::FrameBoardFromTop()
+{
+	const ABoard* Board = Draft ? Draft->GetBoard() : nullptr;
+	FLevelEditorViewportClient* Client = FindPerspectiveViewport();
+	if (!Board || !Client || !Client->Viewport)
+	{
+		return;
+	}
+
+	// Rectangle englobant les cases du brouillon (plateau vide : autour de l'origine du Board)
+	FBox2D Bounds(ForceInit);
+	for (const FBoardCell& Cell : Draft->GetLayout().Cells)
+	{
+		const FVector Center = Board->GridToWorld(Cell.Coord);
+		Bounds += FVector2D(Center.X, Center.Y);
+	}
+	if (!Bounds.bIsValid)
+	{
+		const FVector Origin = Board->GetActorLocation();
+		Bounds += FVector2D(Origin.X, Origin.Y);
+	}
+
+	// Une case de marge tout autour, et au minimum quelques cases visibles
+	const double Margin = Board->CellSize;
+	const double HalfX = FMath::Max(Bounds.GetExtent().X + Margin, Board->CellSize * 2.0);
+	const double HalfY = FMath::Max(Bounds.GetExtent().Y + Margin, Board->CellSize * 2.0);
+
+	// Caméra regardant vers le bas, Yaw 0 : l'axe +X du monde (Nord) est en haut de l'écran, +Y (Est) à droite.
+	// ViewFOV est l'angle horizontal ; l'angle vertical dépend du format de l'image.
+	const FIntPoint ViewSize = Client->Viewport->GetSizeXY();
+	const double Aspect = ViewSize.Y > 0 ? static_cast<double>(ViewSize.X) / ViewSize.Y : 16.0 / 9.0;
+	const double TanHalfHorizontal = FMath::Tan(FMath::DegreesToRadians(Client->ViewFOV * 0.5));
+	const double TanHalfVertical = TanHalfHorizontal / Aspect;
+
+	// Hauteur pour que tout tienne : Y du monde sur la largeur de l'écran, X du monde sur sa hauteur
+	const double Height = FMath::Max(HalfY / TanHalfHorizontal, HalfX / TanHalfVertical);
+
+	const FVector2D Center = Bounds.GetCenter();
+	Client->SetViewLocation(FVector(Center.X, Center.Y, Board->GetActorLocation().Z + Height));
+	Client->SetViewRotation(FRotator(-90.f, 0.f, 0.f));
+	Client->Invalidate();
+}
+
+void UBoardEditorMode::SaveCamera()
+{
+	SavedViewportClient = FindPerspectiveViewport();
+	if (SavedViewportClient)
+	{
+		SavedViewLocation = SavedViewportClient->GetViewLocation();
+		SavedViewRotation = SavedViewportClient->GetViewRotation();
+	}
+}
+
+void UBoardEditorMode::RestoreCamera()
+{
+	// Le viewport a pu être fermé entre-temps (changement de disposition) : on vérifie qu'il existe encore
+	if (SavedViewportClient && GEditor && GEditor->GetLevelViewportClients().Contains(SavedViewportClient))
+	{
+		SavedViewportClient->SetViewLocation(SavedViewLocation);
+		SavedViewportClient->SetViewRotation(SavedViewRotation);
+		SavedViewportClient->Invalidate();
+	}
+	SavedViewportClient = nullptr;
+}
+
+bool UBoardEditorMode::SubmitDraft(bool bIgnoreErrors)
+{
+	ABoard* Board = Draft ? Draft->GetBoard() : nullptr;
+	if (!Board)
+	{
+		return false;
+	}
+
+	const FBoardValidationResult& Result = Draft->GetValidation();
+	if (Result.HasErrors())
+	{
+		if (!bIgnoreErrors)
+		{
+			FBoardValidator::LogResult(Result, TEXT("Submit refusé"));
+			return false;
+		}
+		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] Submit forcé malgré %d erreur(s) (option « Ignorer les erreurs »)."),
+			Result.CountErrors());
+	}
+
+	FBoardLayoutSync::Submit(*Board, Draft->GetLayout(), INVTEXT("Plateau : Submit"));
+
+	// Le brouillon repart de ce qui vient d'être écrit : il n'est plus « modifié »
+	Draft->ResetFromBoard(Board);
+
+	UE_LOG(LogBoardEditor, Log, TEXT("[BoardEditor] Brouillon soumis : %d case(s), %d lien(s)."),
+		Board->GetLayout().Cells.Num(), Board->GetLayout().Links.Num());
+	return true;
+}
+
+void UBoardEditorMode::RevertDraft()
+{
+	if (Draft)
+	{
+		Draft->ResetFromBoard(Draft->GetBoard());
+	}
+}
+
+void UBoardEditorMode::HandleMapLoad(const FString& Filename, FCanLoadMap& OutCanLoadMap)
+{
+	AskAboutPendingDraft();
+}
+
+void UBoardEditorMode::AskAboutPendingDraft()
+{
+	if (!Draft || !Draft->IsDirty() || !Draft->GetBoard())
+	{
+		return;
+	}
+
+	const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::YesNo,
+		INVTEXT("Le brouillon du plateau contient des modifications non soumises.\n\nOui : les soumettre maintenant.\nNon : les abandonner."));
+
+	if (Answer == EAppReturnType::Yes && !SubmitDraft(/*bIgnoreErrors*/ false))
+	{
+		const EAppReturnType::Type Force = FMessageDialog::Open(EAppMsgType::YesNo,
+			FText::Format(INVTEXT("Le brouillon contient {0} erreur(s) (détails dans l'Output Log).\n\nOui : soumettre quand même.\nNon : abandonner les modifications."),
+				FText::AsNumber(Draft->GetValidation().CountErrors())));
+		if (Force == EAppReturnType::Yes)
+		{
+			SubmitDraft(/*bIgnoreErrors*/ true);
+		}
+	}
+
+	// Dans tous les cas, plus rien n'est en attente
+	RevertDraft();
+}

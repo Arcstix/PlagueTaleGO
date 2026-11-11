@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "PlagueTaleGO/Level/Definitions/BoardDefinition.h"
 
+class UBoardNodeType;
+
 /**
  * Trouve tous les Data Assets de définition du projet (types de cases, d'entités, d'objets).
  *
@@ -16,6 +18,10 @@ struct FBoardDefinitionRegistry
 	// Tous les assets de cette classe (sous-classes comprises), triés par SortOrder puis par nom affiché.
 	// Charge les assets trouvés (ils sont petits).
 	static TArray<UBoardDefinition*> GetAll(const UClass* DefinitionClass);
+
+	// Le type de case coché « Type par défaut » (sinon le premier type trouvé, avec un avertissement).
+	// nullptr s'il n'existe aucun type de case.
+	static UBoardNodeType* GetDefaultNodeType();
 
 	// Version typée : FBoardDefinitionRegistry::GetAll<UBoardNodeType>()
 	template <typename T>

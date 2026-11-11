@@ -35,6 +35,10 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
+	// Type présélectionné dans le pinceau du Level Editor. Cocher sur UN seul type (en général « Sol »).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor")
+	bool bIsDefaultType = false;
+
 	// --- Comportement ---
 
 	// Comportements de la case (ex. Board.Node.Exit = case de sortie).

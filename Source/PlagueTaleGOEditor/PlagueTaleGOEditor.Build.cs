@@ -21,7 +21,14 @@ public class PlagueTaleGOEditor : ModuleRules
 			"PlagueTaleGO",     // le jeu : ABoard, layout, définitions, validation
 			"UnrealEd",         // GEditor, transactions (Ctrl+Z), fonctions d'édition des acteurs
 			"AssetRegistry",    // recherche des Data Assets de définition
-			"GameplayTags"
+			"GameplayTags",
+			// Mode éditeur « Plateau » (UEdMode) et Interactive Tools Framework (outils du viewport)
+			"EditorFramework",
+			"InteractiveToolsFramework",
+			"EditorInteractiveToolsFramework",
+			"Slate",
+			"SlateCore",
+			"InputCore"
 		});
 	}
 }

@@ -28,13 +28,39 @@ SUBMIT ──► ABoard::Layout (source de vérité) ──► génération des 
         (une seule transaction : un Ctrl+Z annule tout le Submit)
 ```
 
+### Gestes de l'outil « Plateau » (spécification validée le 11/11/2026)
+
+Un **seul outil**, piloté par la souris et des touches de modification. Survoler une case affiche les actions
+possibles (aide contextuelle) ; la section « Aide » du panneau les liste toutes.
+
+| Geste | Case vide | Case existante | Lien | Étape |
+|---|---|---|---|---|
+| Clic gauche | Poser une case du type du pinceau | Ouvrir ses détails (type, entités, objets, réglages) | — | 2a / 3 |
+| Clic gauche + glisser | Tracer un chemin : chaque case traversée devient une case reliée à la précédente | Pareil, en partant de cette case | — | 2b |
+| Ctrl + clic gauche (ou glisser) | — | Appliquer le type du pinceau aux noeuds ciblés | — | 2a (clic) / 2b (glisser) |
+| Shift + clic gauche (sans bouger) | — | Effacer la case et ses liens | Effacer le lien (prioritaire sur la case) | 2a / 2b |
+| Shift + clic gauche + glisser | Effacer les cases survolées et leurs liens | idem | — | 2b |
+| Clic droit | **Aucune action de l'outil** : caméra uniquement (navigation UE habituelle, clic droit maintenu + ZQSD) | idem | idem | — |
+| Ctrl+Z / Ctrl+Y | Annuler / rétablir dans le brouillon | | | 2a |
+| Échap | Annuler le tracé en cours | | | 2b |
+
+Règles du tracé (2b) : passer sur une case existante la relie au chemin et continue (fermer une boucle, relier deux
+cases voisines) ; si la souris saute une case ou passe en diagonale, le chemin est complété en angle droit.
+Visée d'un lien : près du centre d'une case (30 % de `CellSize`) on vise la case ; vers le bord, entre deux cases
+reliées, on vise le lien (surligné en jaune). Shift + clic sans bouger efface la cible visée ; Shift + glisser n'efface que des cases. Un tracé entier (appui → relâchement) = une seule étape Ctrl+Z.
+Le pinceau présélectionne le type coché **« Type par défaut »** (`UBoardNodeType::bIsDefaultType`).
+**Caméra** : à l'entrée dans le mode, le viewport perspective passe à la verticale du plateau, cadré sur toutes les
+cases (+X / Nord en haut de l'écran) ; la vue d'avant est rétablie à la sortie. Bouton « Vue de dessus » pour recadrer.
+Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : question Soumettre / Abandonner.
+
 ## 2. État d'avancement
 
 | Étape | Contenu | Statut |
 |---|---|---|
-| 1 | Modèle de données (layout, définitions, réglages), liens explicites en jeu, validation enfichable, module éditeur, synchronisation scène, migration, commandes console | ✅ Écrit (10/11/2026), à compiler et tester |
-| 2 | Mode éditeur « Plateau » (`UEdMode`) : outils viewport (peindre / effacer des cases, clic-glisser pour créer case + lien, casser un lien, sélection), brouillon, aperçu | À faire |
-| 3 | Panneau du mode : palette générée depuis les Data Assets, édition des réglages, liste des erreurs, Submit + option « Ignorer les erreurs » | À faire |
+| 1 | Modèle de données (layout, définitions, réglages), liens explicites en jeu, validation enfichable, module éditeur, synchronisation scène, migration, commandes console | ✅ Terminé et testé (11/11/2026, commit 2245e2d) |
+| 2a | Mode « Plateau » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
+| 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Vue de dessus » | ✅ Terminé et testé (12/11/2026) |
+| 3 | Détails d'une case (clic sur une case) : type, entités (type, orientation, réglages), objets, réglages de la case ; palette avec la description des types ; liste des erreurs reliée aux cases (Submit et « Ignorer les erreurs » : faits en 2a) | À faire |
 | 4 | Verrouillage (`ABoardNode` non plaçable à la main…), suppression du code de migration et de l'édition manuelle temporaire (§ 8.10), guide LD | À faire |
 
 > Agent : mettre ce tableau à jour à chaque étape terminée.
@@ -62,7 +88,13 @@ Source/PlagueTaleGOEditor/                 (éditeur uniquement : jamais dans le
   Sync/BoardLayoutSync                     Submit, synchronisation layout → acteurs, migration
   Sync/BoardAutoSync                       Resynchronisation automatique après modification (Layout, NodeClass)
   Commands/BoardEditorCommands.cpp         Commandes console BoardEditor.*
-  (étape 2) Mode/, Tools/                  UEdMode, toolkit, outils interactifs
+  Mode/BoardEditorMode                     UBoardEditorMode (UEdMode) : brouillon, Submit / Annuler, question à la sortie,
+                                           caméra, relance de l'outil s'il s'arrête
+  Mode/BoardEditorModeToolkit              Panneau du mode (FModeToolkit standard, sans Slate)
+  Mode/BoardEditorModeCommands             Boutons de la barre d'outils du mode (TCommands)
+  Mode/BoardLayoutDraft                    UBoardLayoutDraft : copie du layout en cours d'édition + validation
+  Tools/BoardEditTool                      UBoardEditTool : gestes, survol, aperçu ; ses propriétés = panneau
+  Tools/BoardDraftChange.h                 Étape d'historique Ctrl+Z du brouillon (FToolCommandChange)
 ```
 
 Includes dans le module éditeur : même convention que le runtime, chemin depuis `Source/`
@@ -195,6 +227,12 @@ toujours être coloré automatiquement, en discuter avec les GD (ce serait une r
 4. Les placements existants n'ont pas encore d'objet de réglages : l'outil (étape 3) les créera à l'édition ;
    en attendant, gérer `Settings == nullptr` (valeurs par défaut).
 
+**Ajouter ou modifier un geste de l'outil « Plateau »**
+1. Mettre à jour d'abord le tableau des gestes (§ 1) et le valider avec l'équipe.
+2. Dans `UBoardEditTool` : l'entrée passe par un comportement ITF (`USingleClickInputBehavior`, `UMouseHoverBehavior`…,
+   créés dans `Setup`). Toute modification du brouillon passe par `ApplyDraftEdit` (historique Ctrl+Z automatique).
+3. Mettre à jour l'aide : `HelpText` (panneau) et `UpdateHoverMessage` (aide contextuelle).
+
 **Ajouter une règle de validation**
 1. Créer `Level/Validation/Rules/XxxRule.h/.cpp`, classe `UXxxRule : public UBoardValidationRule` (`UCLASS()`).
 2. Dans le constructeur : `Severity` (Erreur bloque le Submit, Avertissement informe) et `Description`.
@@ -255,6 +293,7 @@ Dans le Content Browser : `Content/Data/Board/NodeTypes/` et `Content/Data/Board
 3. Nommer l'asset `DA_Node_Floor`, double-cliquer pour l'ouvrir.
 4. Catégorie *Level Editor* : `Display Name` = « Sol », `Description` = « Case normale, traversable »,
    `Editor Color` au choix, `Sort Order` = 0. Laisser `Settings Class` vide.
+   Cocher `Is Default Type` : c'est le type présélectionné dans le pinceau du mode « Plateau ».
 5. Catégorie *Node* : `Behaviors` **vide** (c'est ce qui en fait le type « sol » pour la migration),
    `Node Class` = `BoardNode` (valeur par défaut, ne pas toucher).
 6. Catégorie *Node | Visuals* : `Mesh` = le mesh choisi en 8.1. `Mesh Scale` : pour le cylindre du moteur
@@ -345,6 +384,14 @@ Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`
 | 10/11/2026 | Erreurs bloquantes : case isolée, 1 départ joueur, ≥ 1 sortie, graphe d'un seul tenant ; sortie atteignable = avertissement ; option « Ignorer les erreurs » décochée par défaut | Choix de l'équipe |
 | 10/11/2026 | Layout stocké dans `ABoard` (pas de Data Asset de niveau séparé) | Un seul fichier par niveau, pas de référence croisée à maintenir |
 | 10/11/2026 | Comportements de cases par Gameplay Tags | Ajout de comportements sans nouveaux booléens ; les GD peuvent nommer des tags |
+| 11/11/2026 | Un seul outil + gestes / raccourcis (tableau du § 1), avec aide contextuelle au survol | Choix de l'équipe : rapidité ; l'aide compense la mémorisation |
+| 11/11/2026 | Effacer en glissant = Shift + clic gauche ; clic droit maintenu reste la caméra | Ne pas casser la navigation standard du viewport |
+| 11/11/2026 | Nouvelles cases = type du pinceau, présélectionné par « Type par défaut » ; Ctrl + clic applique le type | Aucun type codé en dur, changement de type rapide |
+| 11/11/2026 | Brouillon non soumis à la sortie du mode : question Soumettre / Abandonner | Ne jamais perdre ni écrire un brouillon sans le dire |
+| 11/11/2026 | Étape 2 découpée en 2a (squelette testable) et 2b (gestes glissés) | Compiler et tester par petits morceaux |
+| 11/11/2026 | Historique du brouillon par `FToolCommandChange` (copie avant / après du layout) | Mécanisme natif de l'ITF ; layouts petits |
+| 11/11/2026 | Vue de dessus en perspective à l'entrée du mode, vue d'avant rétablie à la sortie (proposition de l'équipe) | Vue d'ensemble du plateau sans perdre l'éclairage ni la navigation habituelle |
+| 11/11/2026 | Aucun geste au clic droit (réservé à la caméra) ; effacer un lien = Shift + clic sans bouger | Décision d'équipe : éviter toute confusion. Remplace le « clic droit simple » écrit puis retiré le même jour |
 
 ## 10. Pièges UE rencontrés
 
@@ -360,6 +407,17 @@ Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`
   mais le **tester ou le lire** (`if (!PawnClass)`, `->`, `.Get()`) appelle `T::StaticClass()` et exige la classe complète
   (erreur C2027 « type non défini »). Les headers des définitions incluent donc la classe complète qu'ils exposent.
   Piège aggravé par l'*adaptive unity build* : selon les fichiers regroupés, l'erreur peut apparaître ou disparaître.
+- **Boutons sans Slate** : une `UFUNCTION(CallInEditor)` sur un `UInteractiveToolPropertySet` devient un bouton dans
+  le panneau du mode. Quand le code modifie une propriété affichée, appeler `NotifyOfPropertyChangeByTool` pour rafraîchir.
+- **`UEdMode` n'a pas d'`InputKey` en 5.8** (API des anciens modes) : les entrées passent par l'ITF. Échap pendant un
+  tracé : l'outil implémente `IInteractiveToolNestedAcceptCancelAPI` (l'éditeur lui propose d'abord Échap). Hors tracé,
+  Échap arrête l'outil : `UBoardEditorMode::OnToolEnded` + `ModeTick` le relancent, et `SaveProperties` /
+  `RestoreProperties` conservent les réglages du panneau (type du pinceau…).
+- **Ne pas capturer le clic droit avec l'ITF** : un comportement d'entrée sur le bouton droit bloquerait la rotation de caméra.
+- **Dans le mode, clic gauche + glisser ne déplace plus la caméra** (il trace) : naviguer au clic droit maintenu + ZQSD,
+  molette, ou clic du milieu.
+- **Limite connue (2a)** : après un Submit, Ctrl+Z annule le Submit dans le niveau mais le brouillon ne suit pas.
+  Cliquer « Annuler le brouillon » pour repartir du niveau.
 - **`LogPlagueTaleGO` n'est pas exportée** : le module éditeur utilise sa propre catégorie `LogBoardEditor`.
 - **Ajouter un module** (`.uproject` + `*.Target.cs` + `*.Build.cs`) : régénérer les fichiers projet
   (clic droit sur `PlagueTaleGO.uproject` > Generate Visual Studio project files).
