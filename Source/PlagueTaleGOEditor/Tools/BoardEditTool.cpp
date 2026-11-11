@@ -7,6 +7,8 @@
 #include "PlagueTaleGO/Board/Board.h"
 #include "PlagueTaleGO/Level/BoardPlacementSettings.h"
 #include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
+#include "PlagueTaleGO/Level/Definitions/BoardEntityType.h"
+#include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
 #include "InteractiveToolManager.h"
 #include "ToolContextInterfaces.h"            // IToolsContextRenderAPI, EToolMessageLevel
 #include "BaseBehaviors/ClickDragBehavior.h"
@@ -30,10 +32,11 @@ namespace
 	constexpr int32 MaxStrokeJump = 32;
 
 	const FLinearColor HoverColor(1.f, 0.85f, 0.f);           // jaune : case ou lien visé
+	const FLinearColor SelectionColor(0.f, 0.9f, 1.f);        // cyan : case sélectionnée
 	const FLinearColor ErrorColor(1.f, 0.1f, 0.1f);           // rouge : erreur, suppression
 	const FLinearColor NewColor(0.2f, 1.f, 0.3f);             // vert : ajout pas encore soumis
 	const FLinearColor LinkColor(0.9f, 0.9f, 0.9f);           // blanc : lien existant
-	const FLinearColor MissingTypeColor(1.f, 0.f, 1.f);       // magenta : case sans type
+	const FLinearColor MissingTypeColor(1.f, 0.f, 1.f);       // magenta : type manquant
 
 	FText NodeTypeLabel(const UBoardNodeType* Type)
 	{
@@ -43,6 +46,12 @@ namespace
 	FText CoordText(FIntPoint Coord)
 	{
 		return FText::Format(INVTEXT("({0}, {1})"), FText::AsNumber(Coord.X), FText::AsNumber(Coord.Y));
+	}
+
+	// Copie d'un objet de réglages appartenant à NewOuter (nullptr reste nullptr)
+	UBoardPlacementSettings* DuplicateSettings(const UBoardPlacementSettings* Settings, UObject* NewOuter)
+	{
+		return Settings ? DuplicateObject<UBoardPlacementSettings>(Settings, NewOuter) : nullptr;
 	}
 
 	// Une croix au centre d'une case
@@ -61,6 +70,28 @@ namespace
 		for (int32 Index = 0; Index < 4; ++Index)
 		{
 			PDI->DrawLine(Corners[Index], Corners[(Index + 1) % 4], Color, SDPG_Foreground, Thickness);
+		}
+	}
+
+	// Une flèche à plat, de Start vers End
+	void DrawFlatArrow(FPrimitiveDrawInterface* PDI, const FVector& Start, const FVector& End, const FLinearColor& Color, float HeadSize, float Thickness)
+	{
+		PDI->DrawLine(Start, End, Color, SDPG_Foreground, Thickness);
+		const FVector Dir = (End - Start).GetSafeNormal();
+		const FVector Side(-Dir.Y, Dir.X, 0.f);
+		PDI->DrawLine(End, End - Dir * HeadSize + Side * HeadSize * 0.6f, Color, SDPG_Foreground, Thickness);
+		PDI->DrawLine(End, End - Dir * HeadSize - Side * HeadSize * 0.6f, Color, SDPG_Foreground, Thickness);
+	}
+
+	// Un petit losange (objet posé sur une case)
+	void DrawDiamond(FPrimitiveDrawInterface* PDI, const FVector& Center, float HalfSize, const FLinearColor& Color, float Thickness)
+	{
+		const FVector Points[] = {
+			Center + FVector(HalfSize, 0.f, 0.f), Center + FVector(0.f, HalfSize, 0.f),
+			Center + FVector(-HalfSize, 0.f, 0.f), Center + FVector(0.f, -HalfSize, 0.f) };
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			PDI->DrawLine(Points[Index], Points[(Index + 1) % 4], Color, SDPG_Foreground, Thickness);
 		}
 	}
 }
@@ -82,7 +113,7 @@ UInteractiveTool* UBoardEditToolBuilder::BuildTool(const FToolBuilderState& Scen
 }
 
 // =====================================================================================
-// Panneau
+// Panneaux (boutons)
 // =====================================================================================
 
 void UBoardEditToolProperties::Submit()
@@ -101,11 +132,27 @@ void UBoardEditToolProperties::Revert()
 	}
 }
 
+void UBoardEditToolProperties::NextError()
+{
+	if (ParentTool.IsValid())
+	{
+		ParentTool->RequestNextError();
+	}
+}
+
 void UBoardEditToolProperties::FrameBoard()
 {
 	if (ParentTool.IsValid())
 	{
 		ParentTool->RequestFrameBoard();
+	}
+}
+
+void UBoardCellDetailsProperties::Deselect()
+{
+	if (ParentTool.IsValid())
+	{
+		ParentTool->ClearSelection();
 	}
 }
 
@@ -134,8 +181,8 @@ void UBoardEditTool::Setup()
 	HoverBehavior->Initialize(this);
 	AddInputBehavior(HoverBehavior);
 
-	// Panneau. RestoreProperties reprend les réglages de la dernière utilisation de l'outil
-	// (l'outil est relancé après un Échap : le type du pinceau ne doit pas être perdu).
+	// Panneau 1/3 : pinceau, brouillon, vue. RestoreProperties reprend les réglages de la dernière
+	// utilisation de l'outil (il est relancé après un Échap : le type du pinceau ne doit pas être perdu).
 	Properties = NewObject<UBoardEditToolProperties>(this);
 	Properties->RestoreProperties(this);
 	Properties->ParentTool = this;
@@ -143,24 +190,36 @@ void UBoardEditTool::Setup()
 	{
 		Properties->PaintType = FBoardDefinitionRegistry::GetDefaultNodeType();
 	}
-	Properties->HelpText = INVTEXT(
-		"Clic gauche sur une case vide : poser une case du type choisi.\n"
+	AddToolPropertySource(Properties);
+
+	// Panneau 2/3 : case sélectionnée (lignes cachées tant qu'aucune case n'est sélectionnée)
+	Details = NewObject<UBoardCellDetailsProperties>(this);
+	Details->ParentTool = this;
+	Details->NoSelectionHint = INVTEXT("Aucune case sélectionnée : cliquer une case du plateau.");
+	AddToolPropertySource(Details);
+
+	// Panneau 3/3 : aide
+	Help = NewObject<UBoardEditToolHelpProperties>(this);
+	Help->HelpText = INVTEXT(
+		"Clic gauche sur une case vide : poser une case du type choisi (elle est sélectionnée).\n"
+		"Clic gauche sur une case : la sélectionner (section « Case sélectionnée » : type, entités, objets).\n"
 		"Clic gauche + glisser : tracer un chemin (crée les cases et les relie ; passer sur une case existante la relie).\n"
-		"Clic gauche sur une case : ses détails (étape 3).\n"
 		"Ctrl + clic gauche (ou glisser) : appliquer le type choisi aux cases.\n"
 		"Shift + clic gauche sur un lien ou une case : l'effacer (une case part avec ses liens).\n"
 		"Shift + clic gauche + glisser : effacer les cases survolées et leurs liens.\n"
-		"Échap pendant un tracé : l'annuler.\n"
+		"Échap : annuler le tracé en cours, sinon désélectionner.\n"
 		"Ctrl+Z / Ctrl+Y : annuler / rétablir dans le brouillon.\n"
 		"Clic droit maintenu + ZQSD : naviguer (caméra habituelle).\n"
 		"\n"
+		"Départ joueur, ennemis : sélectionner la case, puis « + » dans Entités.\n"
 		"Rien n'est modifié dans le niveau avant « Soumettre ».");
-	AddToolPropertySource(Properties);
+	AddToolPropertySource(Help);
 
 	if (UBoardLayoutDraft* Draft = GetDraft())
 	{
 		DraftChangedHandle = Draft->OnChanged.AddUObject(this, &UBoardEditTool::HandleDraftChanged);
 	}
+	UpdatePaintTypeInfo();
 	HandleDraftChanged();
 	UpdateHoverMessage();
 }
@@ -170,7 +229,7 @@ void UBoardEditTool::Shutdown(EToolShutdownType ShutdownType)
 	// Un tracé interrompu par la sortie du mode ne doit pas rester à moitié appliqué
 	CancelStroke();
 
-	// Mémorise les réglages du panneau pour la prochaine fois (voir RestoreProperties dans Setup)
+	// Mémorise les réglages du pinceau pour la prochaine fois (voir RestoreProperties dans Setup)
 	if (Properties)
 	{
 		Properties->SaveProperties(this);
@@ -198,7 +257,15 @@ ABoard* UBoardEditTool::GetBoard() const
 
 void UBoardEditTool::OnPropertyModified(UObject* PropertySet, FProperty* Property)
 {
-	// Le type du pinceau apparaît dans l'aide contextuelle
+	// Modification dans « Case sélectionnée » : l'appliquer au brouillon
+	if (PropertySet == Details)
+	{
+		ApplyDetailsToDraft();
+		return;
+	}
+
+	// Pinceau : sa description et l'aide contextuelle affichent son type
+	UpdatePaintTypeInfo();
 	UpdateHoverMessage();
 }
 
@@ -336,7 +403,10 @@ void UBoardEditTool::OnClickPress(const FInputDeviceRay& PressPos)
 
 	// La nature du tracé est fixée à l'appui : Shift = effacer, Ctrl = appliquer le type, sinon tracer
 	const EStrokeKind Kind = bShiftDown ? EStrokeKind::Erase : (bCtrlDown ? EStrokeKind::ApplyType : EStrokeKind::Paint);
-	if (Kind != EStrokeKind::Erase && !(Properties && Properties->PaintType))
+	const bool bCellExists = Draft->GetLayout().HasCell(Cell);
+
+	// Sans type de pinceau, on peut encore sélectionner une case existante, mais pas en créer
+	if (Kind != EStrokeKind::Erase && !(Properties && Properties->PaintType) && !(Kind == EStrokeKind::Paint && bCellExists))
 	{
 		GetToolManager()->DisplayMessage(INVTEXT("Choisir un type de case dans le panneau (Pinceau > Type de case)."), EToolMessageLevel::UserWarning);
 		return;
@@ -346,7 +416,7 @@ void UBoardEditTool::OnClickPress(const FInputDeviceRay& PressPos)
 	StrokeStartLayout = Draft->GetLayout();
 	StrokeLayout = StrokeStartLayout;
 	bStrokeWasDirty = Draft->IsDirty();
-	bStartCellExisted = StrokeLayout.HasCell(Cell);
+	bStartCellExisted = bCellExists;
 	LastStrokeCell = Cell;
 	HoveredCell = Cell;
 	HoveredLink = Link;
@@ -382,6 +452,12 @@ void UBoardEditTool::OnClickDrag(const FInputDeviceRay& DragPos)
 	if (FMath::Abs(Delta.X) + FMath::Abs(Delta.Y) > MaxStrokeJump)
 	{
 		return;   // saut aberrant (rayon presque horizontal) : ignoré
+	}
+
+	// Tracer sans type de pinceau est impossible (on avait seulement le droit de sélectionner)
+	if (StrokeKind == EStrokeKind::Paint && !(Properties && Properties->PaintType))
+	{
+		return;
 	}
 
 	bool bChanged = false;
@@ -433,18 +509,16 @@ void UBoardEditTool::OnClickRelease(const FInputDeviceRay& ReleasePos)
 		return;
 	}
 
-	// Clic simple sur une case existante, sans modificateur : détails de la case (étape 3)
-	if (StrokeKind == EStrokeKind::Paint && !bStrokeMoved && bStartCellExisted)
-	{
-		GetToolManager()->DisplayMessage(INVTEXT("Détails de la case : disponible à l'étape 3."), EToolMessageLevel::UserNotification);
-	}
+	const EStrokeKind Kind = StrokeKind;
+	const bool bWasClick = !bStrokeMoved;
+	const FIntPoint ClickedCell = LastStrokeCell;
 
 	// Shift + clic sans bouger : le lien visé est prioritaire, sinon la case
-	if (StrokeKind == EStrokeKind::Erase && !bStrokeMoved)
+	if (Kind == EStrokeKind::Erase && bWasClick)
 	{
 		const bool bErased = StrokeStartLink.IsSet()
 			? StrokeLayout.RemoveLink(StrokeStartLink->A, StrokeStartLink->B)
-			: StrokeLayout.RemoveCell(LastStrokeCell);
+			: StrokeLayout.RemoveCell(ClickedCell);
 		if (bErased)
 		{
 			bStrokeChanged = true;
@@ -456,23 +530,30 @@ void UBoardEditTool::OnClickRelease(const FInputDeviceRay& ReleasePos)
 	if (bStrokeChanged)
 	{
 		FText Description;
-		switch (StrokeKind)
+		switch (Kind)
 		{
 		case EStrokeKind::Erase:
-			Description = bStrokeMoved ? INVTEXT("Plateau : effacer des cases")
+			Description = !bWasClick ? INVTEXT("Plateau : effacer des cases")
 				: (StrokeStartLink.IsSet() ? INVTEXT("Plateau : effacer un lien") : INVTEXT("Plateau : effacer une case"));
 			break;
 		case EStrokeKind::ApplyType:
 			Description = INVTEXT("Plateau : appliquer un type");
 			break;
 		default:
-			Description = bStrokeMoved ? INVTEXT("Plateau : tracer un chemin") : INVTEXT("Plateau : poser une case");
+			Description = !bWasClick ? INVTEXT("Plateau : tracer un chemin") : INVTEXT("Plateau : poser une case");
 			break;
 		}
 		GetToolManager()->EmitObjectChange(Draft, MakeUnique<FBoardDraftChange>(StrokeStartLayout, StrokeLayout, Description.ToString()), Description);
 	}
 
 	ResetStroke();
+
+	// Clic simple (sans touche) : sélectionner la case cliquée, qu'elle existait ou vienne d'être posée
+	if (Kind == EStrokeKind::Paint && bWasClick)
+	{
+		SelectCell(ClickedCell);
+	}
+
 	UpdateHoverMessage();
 }
 
@@ -485,12 +566,18 @@ void UBoardEditTool::OnTerminateDragSequence()
 
 bool UBoardEditTool::ExecuteNestedCancelCommand()
 {
-	if (!IsStrokeActive())
+	// Échap : d'abord le tracé en cours, sinon la sélection
+	if (IsStrokeActive())
 	{
-		return false;
+		CancelStroke();
+		return true;
 	}
-	CancelStroke();
-	return true;   // Échap consommé : l'outil reste actif
+	if (SelectedCell.IsSet())
+	{
+		ClearSelection();
+		return true;
+	}
+	return false;
 }
 
 void UBoardEditTool::CancelStroke()
@@ -594,6 +681,155 @@ void UBoardEditTool::ResetStroke()
 }
 
 // =====================================================================================
+// Sélection et détails
+// =====================================================================================
+
+void UBoardEditTool::SelectCell(FIntPoint Coord)
+{
+	const UBoardLayoutDraft* Draft = GetDraft();
+	if (!Draft || !Draft->GetLayout().HasCell(Coord))
+	{
+		ClearSelection();
+		return;
+	}
+	SelectedCell = Coord;
+	RefreshDetails();
+}
+
+void UBoardEditTool::ClearSelection()
+{
+	SelectedCell.Reset();
+	RefreshDetails();
+}
+
+void UBoardEditTool::RefreshDetails(bool bCopyCellData)
+{
+	const UBoardLayoutDraft* Draft = GetDraft();
+	const FBoardCell* Cell = (Draft && SelectedCell.IsSet()) ? Draft->GetLayout().FindCell(SelectedCell.GetValue()) : nullptr;
+	if (!Details)
+	{
+		return;
+	}
+	if (!Cell)
+	{
+		// Case effacée, annulée (Ctrl+Z) ou rien de sélectionné : les lignes de la section se cachent
+		SelectedCell.Reset();
+		Details->bHasSelection = false;
+		NotifyOfPropertyChangeByTool(Details);
+		return;
+	}
+
+	// Copies des réglages : le panneau ne modifie jamais directement le brouillon (tout passe par l'historique)
+	if (bCopyCellData)
+	{
+		Details->Coord = Cell->Coord;
+		Details->NodeType = Cell->NodeType;
+		Details->TypeDescription = Cell->NodeType ? Cell->NodeType->Description : FText::GetEmpty();
+		Details->NodeSettings = DuplicateSettings(Cell->NodeSettings, Details);
+		Details->Entities = Cell->Entities;
+		for (FBoardEntityPlacement& Entity : Details->Entities)
+		{
+			Entity.Settings = DuplicateSettings(Entity.Settings, Details);
+		}
+		Details->Items = Cell->Items;
+		for (FBoardItemPlacement& Item : Details->Items)
+		{
+			Item.Settings = DuplicateSettings(Item.Settings, Details);
+		}
+	}
+
+	Details->CellProblems.Reset();
+	for (const FBoardValidationMessage& Message : Draft->GetValidation().Messages)
+	{
+		if (Message.Cells.Contains(Cell->Coord))
+		{
+			const TCHAR* Prefix = Message.Severity == EBoardValidationSeverity::Error ? TEXT("Erreur : ") : TEXT("Avertissement : ");
+			Details->CellProblems.Add(Prefix + Message.Text.ToString());
+		}
+	}
+
+	Details->bHasSelection = true;
+	NotifyOfPropertyChangeByTool(Details);
+}
+
+void UBoardEditTool::FixupDetailsSettings()
+{
+	// Chaque élément doit avoir exactement un objet de réglages de la classe demandée par son type (ou aucun)
+	auto Fix = [this](const UBoardDefinition* Definition, TObjectPtr<UBoardPlacementSettings>& Settings)
+	{
+		UClass* Wanted = nullptr;
+		if (Definition && Definition->SettingsClass && !Definition->SettingsClass->HasAnyClassFlags(CLASS_Abstract))
+		{
+			Wanted = Definition->SettingsClass.Get();
+		}
+		if (!Wanted)
+		{
+			Settings = nullptr;
+		}
+		else if (!Settings || Settings->GetClass() != Wanted)
+		{
+			Settings = Definition->CreateSettings(Details);
+		}
+	};
+
+	Fix(Details->NodeType, Details->NodeSettings);
+	for (FBoardEntityPlacement& Entity : Details->Entities)
+	{
+		Fix(Entity.Type, Entity.Settings);
+	}
+	for (FBoardItemPlacement& Item : Details->Items)
+	{
+		Fix(Item.Type, Item.Settings);
+	}
+}
+
+void UBoardEditTool::ApplyDetailsToDraft()
+{
+	if (!Details || !SelectedCell.IsSet())
+	{
+		return;
+	}
+
+	FixupDetailsSettings();
+	Details->TypeDescription = Details->NodeType ? Details->NodeType->Description : FText::GetEmpty();
+
+	// Pendant l'application, ne pas recharger le panneau depuis le brouillon (l'édition en cours serait perturbée)
+	{
+		TGuardValue<bool> Guard(bApplyingDetails, true);
+
+		const FIntPoint Coord = SelectedCell.GetValue();
+		ApplyDraftEdit(INVTEXT("Plateau : modifier une case"), [this, Coord](FBoardLayout& Layout)
+		{
+			FBoardCell* Cell = Layout.FindCell(Coord);
+			UBoardLayoutDraft* Draft = GetDraft();
+			if (!Cell || !Draft)
+			{
+				return false;
+			}
+
+			// Le brouillon garde ses propres copies des réglages
+			Cell->NodeType = Details->NodeType;
+			Cell->NodeSettings = DuplicateSettings(Details->NodeSettings, Draft);
+			Cell->Entities = Details->Entities;
+			for (FBoardEntityPlacement& Entity : Cell->Entities)
+			{
+				Entity.Settings = DuplicateSettings(Entity.Settings, Draft);
+			}
+			Cell->Items = Details->Items;
+			for (FBoardItemPlacement& Item : Cell->Items)
+			{
+				Item.Settings = DuplicateSettings(Item.Settings, Draft);
+			}
+			return true;
+		});
+	}
+
+	// Problèmes de la case, description du type, réglages créés : le panneau doit les afficher
+	// (sans recopier la case : l'utilisateur est en train d'éditer ces valeurs)
+	RefreshDetails(/*bCopyCellData*/ false);
+}
+
+// =====================================================================================
 // Survol
 // =====================================================================================
 
@@ -669,7 +905,7 @@ void UBoardEditTool::UpdateHoverMessage()
 	}
 	else if (const FBoardCell* Cell = Draft->GetLayout().FindCell(HoveredCell.GetValue()))
 	{
-		Message = FText::Format(INVTEXT("Case {0} « {1} » — Glisser : tracer depuis cette case · Ctrl + clic : appliquer « {2} » · Shift + clic : effacer · Shift + glisser : effacer en continu"),
+		Message = FText::Format(INVTEXT("Case {0} « {1} » — Clic : sélectionner · Glisser : tracer depuis cette case · Ctrl + clic : appliquer « {2} » · Shift + clic : effacer"),
 			CoordText(Cell->Coord), NodeTypeLabel(Cell->NodeType), PaintName);
 	}
 	else
@@ -684,6 +920,18 @@ void UBoardEditTool::UpdateHoverMessage()
 // =====================================================================================
 // Panneau
 // =====================================================================================
+
+void UBoardEditTool::UpdatePaintTypeInfo()
+{
+	if (!Properties)
+	{
+		return;
+	}
+	const UBoardNodeType* Type = Properties->PaintType;
+	Properties->PaintTypeDescription = Type ? Type->Description : INVTEXT("Aucun type choisi : impossible de poser des cases.");
+	Properties->PaintTypeColor = Type ? Type->EditorColor : MissingTypeColor;
+	NotifyOfPropertyChangeByTool(Properties);
+}
 
 void UBoardEditTool::HandleDraftChanged()
 {
@@ -709,6 +957,12 @@ void UBoardEditTool::HandleDraftChanged()
 
 	// Le panneau ne se rafraîchit pas tout seul quand le code modifie des propriétés : on le prévient
 	NotifyOfPropertyChangeByTool(Properties);
+
+	// La case sélectionnée a pu changer (Ctrl+Z, effacement…) : sauf si le changement vient du panneau lui-même
+	if (!bApplyingDetails)
+	{
+		RefreshDetails();
+	}
 	UpdateHoverMessage();
 }
 
@@ -728,7 +982,7 @@ void UBoardEditTool::RequestSubmit()
 	}
 
 	FMessageDialog::Open(EAppMsgType::Ok, FText::Format(
-		INVTEXT("Submit refusé : le brouillon contient {0} erreur(s).\n\nVoir la liste « Problèmes » du panneau, ou cocher « Ignorer les erreurs (dev) »."),
+		INVTEXT("Submit refusé : le brouillon contient {0} erreur(s).\n\nVoir la liste « Problèmes » du panneau (bouton « Erreur suivante »), ou cocher « Ignorer les erreurs (dev) »."),
 		FText::AsNumber(Draft->GetValidation().CountErrors())));
 }
 
@@ -754,6 +1008,54 @@ void UBoardEditTool::RequestFrameBoard()
 	{
 		Mode->FrameBoardFromTop();
 	}
+}
+
+void UBoardEditTool::RequestNextError()
+{
+	const UBoardLayoutDraft* Draft = GetDraft();
+	if (!Mode.IsValid() || !Draft)
+	{
+		return;
+	}
+
+	// Une entrée par (case, message) : erreurs d'abord, puis avertissements. Les messages sans case
+	// (ex. « aucune sortie ») ne peuvent pas être montrés sur le plateau : ils restent dans « Problèmes ».
+	struct FProblemSpot
+	{
+		FIntPoint Coord;
+		FText Text;
+		bool bIsError;
+	};
+	TArray<FProblemSpot> Spots;
+	for (const EBoardValidationSeverity Severity : { EBoardValidationSeverity::Error, EBoardValidationSeverity::Warning })
+	{
+		for (const FBoardValidationMessage& Message : Draft->GetValidation().Messages)
+		{
+			if (Message.Severity != Severity)
+			{
+				continue;
+			}
+			for (const FIntPoint& Coord : Message.Cells)
+			{
+				Spots.Add({ Coord, Message.Text, Severity == EBoardValidationSeverity::Error });
+			}
+		}
+	}
+
+	if (Spots.Num() == 0)
+	{
+		GetToolManager()->DisplayMessage(INVTEXT("Aucun problème lié à une case (voir aussi la liste « Problèmes »)."), EToolMessageLevel::UserNotification);
+		return;
+	}
+
+	const FProblemSpot& Spot = Spots[NextErrorIndex % Spots.Num()];
+	NextErrorIndex = (NextErrorIndex + 1) % Spots.Num();
+
+	SelectCell(Spot.Coord);
+	Mode->FocusCell(Spot.Coord);
+	GetToolManager()->DisplayMessage(FText::Format(INVTEXT("{0} {1} : {2}"),
+		Spot.bIsError ? INVTEXT("Erreur") : INVTEXT("Avertissement"), CoordText(Spot.Coord), Spot.Text),
+		EToolMessageLevel::UserWarning);
 }
 
 // =====================================================================================
@@ -797,7 +1099,8 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		}
 	}
 
-	// 3. Cases du brouillon : cercle de la couleur du type ; vert autour si ajoutée ; rouge autour si en erreur
+	// 3. Cases du brouillon : cercle de la couleur du type ; vert autour si ajoutée ; rouge autour si en erreur.
+	//    Entités : une flèche dans la direction où elles regardent. Objets : un petit losange.
 	for (const FBoardCell& Cell : Layout.Cells)
 	{
 		const FVector Center = CellCenter(Cell.Coord);
@@ -812,6 +1115,25 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		{
 			DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, ErrorColor, Size * 0.4f, 24, SDPG_Foreground, 2.f);
 		}
+
+		for (int32 Index = 0; Index < Cell.Entities.Num(); ++Index)
+		{
+			const FBoardEntityPlacement& Entity = Cell.Entities[Index];
+			const FIntPoint Offset = BoardDirection::ToGridOffset(Entity.Facing);
+			const FVector Dir(Offset.X, Offset.Y, 0.f);
+			// Plusieurs entités : légèrement décalées pour rester lisibles
+			const FVector Start = Center + FVector(0.f, 0.f, 2.f * Index);
+			const FLinearColor Color = (Entity.Type && Entity.Type->PawnClass) ? Entity.Type->EditorColor : MissingTypeColor;
+			DrawFlatArrow(PDI, Start, Start + Dir * Size * 0.22f, Color, Size * 0.08f, 3.f);
+		}
+
+		for (int32 Index = 0; Index < Cell.Items.Num(); ++Index)
+		{
+			const FBoardItemPlacement& Item = Cell.Items[Index];
+			const FVector ItemCenter = Center + FVector(-Size * 0.15f, -Size * 0.15f + Index * Size * 0.08f, 0.f);
+			const FLinearColor Color = Item.Type ? Item.Type->EditorColor : MissingTypeColor;
+			DrawDiamond(PDI, ItemCenter, Size * 0.04f, Color, 2.f);
+		}
 	}
 
 	// 4. Cases qui seront supprimées au Submit : croix rouge
@@ -823,7 +1145,11 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		}
 	}
 
-	// 5. Case survolée (sauf si c'est un lien qui est visé)
+	// 5. Case sélectionnée, puis case survolée (sauf si c'est un lien qui est visé)
+	if (SelectedCell.IsSet())
+	{
+		DrawCellSquare(PDI, CellCenter(SelectedCell.GetValue()), Size * 0.45f, SelectionColor, 4.f);
+	}
 	if (HoveredCell.IsSet() && !HoveredLink.IsSet())
 	{
 		DrawCellSquare(PDI, CellCenter(HoveredCell.GetValue()), Size * 0.5f, HoverColor, 2.f);

@@ -59,6 +59,9 @@ public:
 	// Place la caméra du viewport à la verticale du plateau, cadrée sur toutes les cases du brouillon
 	void FrameBoardFromTop();
 
+	// Déplace la caméra (sans changer son orientation ni sa distance) pour centrer cette case à l'écran
+	void FocusCell(FIntPoint Coord);
+
 	// --- Brouillon ---
 	UBoardLayoutDraft* GetDraft() const { return Draft; }
 

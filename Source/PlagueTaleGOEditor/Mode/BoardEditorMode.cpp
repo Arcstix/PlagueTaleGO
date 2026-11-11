@@ -182,6 +182,33 @@ void UBoardEditorMode::FrameBoardFromTop()
 	Client->Invalidate();
 }
 
+void UBoardEditorMode::FocusCell(FIntPoint Coord)
+{
+	const ABoard* Board = Draft ? Draft->GetBoard() : nullptr;
+	FLevelEditorViewportClient* Client = FindPerspectiveViewport();
+	if (!Board || !Client)
+	{
+		return;
+	}
+
+	const FVector Target = Board->GridToWorld(Coord);
+	const FVector Forward = Client->GetViewRotation().Vector();
+
+	// Caméra qui ne regarde pas vers le plateau : on repasse en vue de dessus avant de centrer
+	if (Forward.Z > -0.1)
+	{
+		FrameBoardFromTop();
+	}
+
+	// On garde l'orientation et la distance au plan du plateau, et on glisse la caméra
+	// pour que le centre de l'écran tombe sur la case
+	const FVector CameraLocation = Client->GetViewLocation();
+	const FVector ViewForward = Client->GetViewRotation().Vector();
+	const double Distance = (CameraLocation.Z - Target.Z) / FMath::Max(-ViewForward.Z, 0.1);
+	Client->SetViewLocation(Target - ViewForward * Distance);
+	Client->Invalidate();
+}
+
 void UBoardEditorMode::SaveCamera()
 {
 	SavedViewportClient = FindPerspectiveViewport();

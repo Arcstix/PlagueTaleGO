@@ -35,14 +35,14 @@ possibles (aide contextuelle) ; la section « Aide » du panneau les liste toute
 
 | Geste | Case vide | Case existante | Lien | Étape |
 |---|---|---|---|---|
-| Clic gauche | Poser une case du type du pinceau | Ouvrir ses détails (type, entités, objets, réglages) | — | 2a / 3 |
+| Clic gauche | Poser une case du type du pinceau (elle est sélectionnée) | La sélectionner : section « Case sélectionnée » (type, entités, objets, réglages) | — | 2a / 3 |
 | Clic gauche + glisser | Tracer un chemin : chaque case traversée devient une case reliée à la précédente | Pareil, en partant de cette case | — | 2b |
 | Ctrl + clic gauche (ou glisser) | — | Appliquer le type du pinceau aux noeuds ciblés | — | 2a (clic) / 2b (glisser) |
 | Shift + clic gauche (sans bouger) | — | Effacer la case et ses liens | Effacer le lien (prioritaire sur la case) | 2a / 2b |
 | Shift + clic gauche + glisser | Effacer les cases survolées et leurs liens | idem | — | 2b |
 | Clic droit | **Aucune action de l'outil** : caméra uniquement (navigation UE habituelle, clic droit maintenu + ZQSD) | idem | idem | — |
 | Ctrl+Z / Ctrl+Y | Annuler / rétablir dans le brouillon | | | 2a |
-| Échap | Annuler le tracé en cours | | | 2b |
+| Échap | Annuler le tracé en cours, sinon désélectionner la case | | | 2b / 3 |
 
 Règles du tracé (2b) : passer sur une case existante la relie au chemin et continue (fermer une boucle, relier deux
 cases voisines) ; si la souris saute une case ou passe en diagonale, le chemin est complété en angle droit.
@@ -60,7 +60,7 @@ Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : quest
 | 1 | Modèle de données (layout, définitions, réglages), liens explicites en jeu, validation enfichable, module éditeur, synchronisation scène, migration, commandes console | ✅ Terminé et testé (11/11/2026, commit 2245e2d) |
 | 2a | Mode « Plateau » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
 | 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Vue de dessus » | ✅ Terminé et testé (12/11/2026) |
-| 3 | Détails d'une case (clic sur une case) : type, entités (type, orientation, réglages), objets, réglages de la case ; palette avec la description des types ; liste des erreurs reliée aux cases (Submit et « Ignorer les erreurs » : faits en 2a) | À faire |
+| 3 | Sélection d'une case + section « Case sélectionnée » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Erreur suivante » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
 | 4 | Verrouillage (`ABoardNode` non plaçable à la main…), suppression du code de migration et de l'édition manuelle temporaire (§ 8.10), guide LD | À faire |
 
 > Agent : mettre ce tableau à jour à chaque étape terminée.
@@ -93,7 +93,8 @@ Source/PlagueTaleGOEditor/                 (éditeur uniquement : jamais dans le
   Mode/BoardEditorModeToolkit              Panneau du mode (FModeToolkit standard, sans Slate)
   Mode/BoardEditorModeCommands             Boutons de la barre d'outils du mode (TCommands)
   Mode/BoardLayoutDraft                    UBoardLayoutDraft : copie du layout en cours d'édition + validation
-  Tools/BoardEditTool                      UBoardEditTool : gestes, survol, aperçu ; ses propriétés = panneau
+  Tools/BoardEditTool                      UBoardEditTool : gestes, survol, sélection, aperçu ; ses 3 jeux de propriétés
+                                           = le panneau (pinceau / brouillon / vue, case sélectionnée, aide)
   Tools/BoardDraftChange.h                 Étape d'historique Ctrl+Z du brouillon (FToolCommandChange)
 ```
 
@@ -224,7 +225,8 @@ toujours être coloré automatiquement, en discuter avec les GD (ce serait une r
 2. Dans le Data Asset du type, choisir cette classe dans `SettingsClass`.
 3. Côté jeu : surcharger `ABoardPawn::ApplyPlacementSettings` et faire un `Cast` vers la classe de réglages.
    Les réglages arrivent **avant** `BeginPlay`.
-4. Les placements existants n'ont pas encore d'objet de réglages : l'outil (étape 3) les créera à l'édition ;
+4. Dans le mode « Plateau », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
+   entité ou d'un objet (section « Case sélectionnée »). Les placements déjà soumis les reçoivent à leur prochaine édition ;
    en attendant, gérer `Settings == nullptr` (valeurs par défaut).
 
 **Ajouter ou modifier un geste de l'outil « Plateau »**
@@ -351,6 +353,9 @@ l'ignore, et l'Output Log l'indique.
 
 ### 8.9 Corriger le layout à la main (temporaire, en attendant le mode « Plateau »)
 
+> **Obsolète depuis l'étape 3** : sélectionner la case dans le mode « Plateau » et utiliser la section
+> « Case sélectionnée ». Cette option sera supprimée à l'étape 4.
+
 Cas typique : après l'import, la validation signale « Aucune case de sortie » ou « Aucun départ joueur » parce
 que l'ancien niveau ne les définissait pas (ou pas sur les instances). On complète alors le layout directement :
 
@@ -390,6 +395,8 @@ Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`
 | 11/11/2026 | Brouillon non soumis à la sortie du mode : question Soumettre / Abandonner | Ne jamais perdre ni écrire un brouillon sans le dire |
 | 11/11/2026 | Étape 2 découpée en 2a (squelette testable) et 2b (gestes glissés) | Compiler et tester par petits morceaux |
 | 11/11/2026 | Historique du brouillon par `FToolCommandChange` (copie avant / après du layout) | Mécanisme natif de l'ITF ; layouts petits |
+| 12/11/2026 | Détails d'une case = section « Case sélectionnée » du panneau ; entités placées depuis ces détails ; palette = liste déroulante + description ; « Erreur suivante » (sans Slate) | Choix de l'équipe : rapide à livrer, sans code Slate |
+| 12/11/2026 | Échap : tracé en cours, puis sélection, puis arrêt (et relance) de l'outil | Comportement standard des outils UE (annulations imbriquées) |
 | 11/11/2026 | Vue de dessus en perspective à l'entrée du mode, vue d'avant rétablie à la sortie (proposition de l'équipe) | Vue d'ensemble du plateau sans perdre l'éclairage ni la navigation habituelle |
 | 11/11/2026 | Aucun geste au clic droit (réservé à la caméra) ; effacer un lien = Shift + clic sans bouger | Décision d'équipe : éviter toute confusion. Remplace le « clic droit simple » écrit puis retiré le même jour |
 
@@ -413,6 +420,14 @@ Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`
   tracé : l'outil implémente `IInteractiveToolNestedAcceptCancelAPI` (l'éditeur lui propose d'abord Échap). Hors tracé,
   Échap arrête l'outil : `UBoardEditorMode::OnToolEnded` + `ModeTick` le relancent, et `SaveProperties` /
   `RestoreProperties` conservent les réglages du panneau (type du pinceau…).
+- **Le panneau du mode ne se reconstruit pas** : `FModeToolkit` ne liste les jeux de propriétés de l'outil qu'au démarrage
+  de l'outil. `SetToolPropertySourceEnabled` ne fait donc ni apparaître ni disparaître une section. Pour une section
+  conditionnelle : la garder toujours présente et cacher ses lignes avec `EditCondition` + `EditConditionHides`
+  (cf. `UBoardCellDetailsProperties::bHasSelection`).
+- **Le panneau édite des copies** : la section « Case sélectionnée » reçoit des copies (réglages dupliqués) de la
+  case ; chaque modification est recopiée dans le brouillon par `ApplyDraftEdit` (Ctrl+Z). Ne jamais lui donner les
+  objets du brouillon directement (modification hors historique). Pendant cette recopie (`bApplyingDetails`), on ne
+  recharge pas le panneau depuis le brouillon, pour ne pas perturber l'édition en cours.
 - **Ne pas capturer le clic droit avec l'ITF** : un comportement d'entrée sur le bouton droit bloquerait la rotation de caméra.
 - **Dans le mode, clic gauche + glisser ne déplace plus la caméra** (il trace) : naviguer au clic droit maintenu + ZQSD,
   molette, ou clic du milieu.
