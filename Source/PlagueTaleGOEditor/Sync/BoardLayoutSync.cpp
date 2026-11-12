@@ -155,6 +155,9 @@ void FBoardLayoutSync::SyncNodeActors(ABoard& Board)
 
 		Node->Modify();
 		Node->SetNodeType(Cell.NodeType);
+
+		// Une case générée ne se déplace pas à la main (sa position vient de la grille)
+		Node->SetLockLocation(true);
 	}
 
 	// 3. Cases qui ne sont plus dans le layout

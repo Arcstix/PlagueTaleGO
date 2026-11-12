@@ -39,9 +39,6 @@ public:
 	// --- Layout du niveau ---
 	const FBoardLayout& GetLayout() const { return Layout; }
 
-	// Nom de la propriété Layout, pour la reconnaître dans les notifications de modification de l'éditeur
-	static FName GetLayoutPropertyName() { return GET_MEMBER_NAME_CHECKED(ABoard, Layout); }
-
 	// Vrai si un lien a été tracé entre A et B
 	bool HasLink(FIntPoint A, FIntPoint B) const { return Layout.HasLink(A, B); }
 
@@ -75,17 +72,9 @@ protected:
 
 	// --- Layout du niveau ---
 
-#if WITH_EDITORONLY_DATA
-	// TEMPORAIRE, en attendant le mode « Plateau » du Level Editor : autorise l'édition directe du layout
-	// ci-dessous (type des cases, entités, objets). Ne pas ajouter/supprimer de cases ni de liens ici.
-	// Après modification : décocher, puis commandes console BoardEditor.Resync et BoardEditor.Validate.
-	UPROPERTY(EditAnywhere, Category = "Board|Level", meta = (DisplayName = "Edition manuelle du layout (temporaire)"))
-	bool bAllowManualLayoutEdit = false;
-#endif
-
 	// Le plateau du niveau : cases, liens, entités de départ, objets.
-	// Lecture seule : se modifie avec le Level Editor (ou, temporairement, en cochant la case ci-dessus).
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (EditCondition = "bAllowManualLayoutEdit"))
+	// Lecture seule ici : se modifie uniquement avec le mode « Plateau » du Level Editor.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Level")
 	FBoardLayout Layout;
 
 #if WITH_EDITORONLY_DATA

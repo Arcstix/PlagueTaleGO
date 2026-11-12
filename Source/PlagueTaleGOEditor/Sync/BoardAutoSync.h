@@ -8,9 +8,8 @@ struct FPropertyChangedEvent;
 
 /**
  * Resynchronise automatiquement la scène quand une donnée du plateau est modifiée dans l'éditeur,
- * pour ne pas avoir à taper BoardEditor.Resync :
- * - le Layout d'un ABoard (ex. édition manuelle temporaire, § 8.9 du CLAUDE.md) ;
- * - le NodeClass d'un type de case (les acteurs de cette case doivent être recréés).
+ * pour ne pas avoir à taper BoardEditor.Resync : le NodeClass d'un type de case
+ * (les acteurs des cases de ce type doivent être recréés).
  * Le visuel d'un type de case (mesh, matériaux) est déjà mis à jour par UBoardNodeType lui-même.
  *
  * Mécanisme UE : FCoreUObjectDelegates::OnObjectPropertyChanged est diffusé par l'éditeur

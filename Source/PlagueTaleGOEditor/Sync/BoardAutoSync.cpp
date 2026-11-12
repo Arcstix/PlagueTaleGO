@@ -37,22 +37,7 @@ void FBoardAutoSync::HandleObjectPropertyChanged(UObject* Object, FPropertyChang
 	// MemberProperty = la propriété de premier niveau de l'objet (ex. Layout, même si on a modifié une case à l'intérieur)
 	const FName MemberName = Event.GetMemberPropertyName();
 
-	// 1. Le Layout d'un Board du niveau ouvert a changé
-	if (ABoard* Board = Cast<ABoard>(Object))
-	{
-		UWorld* World = Board->GetWorld();
-		if (Board->IsTemplate() || !World || World->WorldType != EWorldType::Editor)
-		{
-			return;   // objet par défaut d'un BP (BP_Board) ou Board d'un autre monde
-		}
-		if (MemberName == ABoard::GetLayoutPropertyName())
-		{
-			FBoardLayoutSync::SyncNodeActors(*Board);
-		}
-		return;
-	}
-
-	// 2. Le NodeClass d'un type de case a changé : les cases de ce type doivent être recréées
+	// Le NodeClass d'un type de case a changé : les cases de ce type doivent être recréées
 	if (Cast<UBoardNodeType>(Object) && MemberName == GET_MEMBER_NAME_CHECKED(UBoardNodeType, NodeClass))
 	{
 		UWorld* World = GEditor->GetEditorWorldContext().World();

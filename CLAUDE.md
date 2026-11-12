@@ -56,7 +56,8 @@ PlagueTaleGO.uproject
 ### Construire un niveau
 
 Le plateau (cases, types, liens, entités, objets) se configure **uniquement avec le Level Editor**.
-Détails, état d'avancement et recettes : `/Source/PlagueTaleGOEditor/CLAUDE.md`.
+Guide utilisateur (LD / GA) : document partagé « Guide du Level Editor — Plague Tale GO » (https://claude.ai/artifact/QJjZaKR7saJu2GxhgbjC9h).
+Détails techniques, état d'avancement et recettes : `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 
 1. Placer **un seul** `BP_Board` : sa position est l'origine de la grille, `CellSize` la taille d'une case.
 2. Construire le plateau avec le **mode « Plateau »** (liste déroulante des modes de l'éditeur > Plateau) :

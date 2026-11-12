@@ -4,6 +4,8 @@
 > Ce fichier documente **tout le Level Editor** : ses données (module runtime, dossier `Level/`)
 > et son outil (module éditeur `PlagueTaleGOEditor`, ce dossier).
 > Branche de développement : `feature/LevelEditor`.
+> **Guide utilisateur (LD / GA, sans code)** : document partagé « Guide du Level Editor — Plague Tale GO »
+> (https://claude.ai/artifact/QJjZaKR7saJu2GxhgbjC9h). À tenir à jour quand un geste ou un écran de l'outil change.
 
 ## 1. Objectif et périmètre
 
@@ -61,7 +63,8 @@ Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : quest
 | 2a | Mode « Plateau » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
 | 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Vue de dessus » | ✅ Terminé et testé (12/11/2026) |
 | 3 | Sélection d'une case + section « Case sélectionnée » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Erreur suivante » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
-| 4 | Verrouillage (`ABoardNode` non plaçable à la main…), suppression du code de migration et de l'édition manuelle temporaire (§ 8.10), guide LD | À faire |
+| 4a | Verrouillage léger (`ABoardNode` en `NotPlaceable`, position verrouillée à la génération), suppression de l'édition manuelle temporaire du `BP_Board`, guide utilisateur (document partagé) | ✅ Écrit (12/11/2026), à compiler et tester |
+| 4b | Suppression du code de migration (§ 8.9) | Plus tard : quand toutes les branches seront fusionnées dans `develop` et leurs niveaux migrés |
 
 > Agent : mettre ce tableau à jour à chaque étape terminée.
 
@@ -86,7 +89,7 @@ Source/PlagueTaleGOEditor/                 (éditeur uniquement : jamais dans le
   PlagueTaleGOEditor.h/.cpp                Module + catégorie de log LogBoardEditor, tag [BoardEditor]
   Definitions/BoardDefinitionRegistry      Trouve tous les Data Assets de définition (Asset Registry)
   Sync/BoardLayoutSync                     Submit, synchronisation layout → acteurs, migration
-  Sync/BoardAutoSync                       Resynchronisation automatique après modification (Layout, NodeClass)
+  Sync/BoardAutoSync                       Resynchronisation automatique après modification du NodeClass d'un type
   Commands/BoardEditorCommands.cpp         Commandes console BoardEditor.*
   Mode/BoardEditorMode                     UBoardEditorMode (UEdMode) : brouillon, Submit / Annuler, question à la sortie,
                                            caméra, relance de l'outil s'il s'arrête
@@ -121,7 +124,6 @@ UBoardSubsystem (graphe = acteurs + Layout.Links)    ABoardGameMode (pions = Lay
 1. **Le layout (`ABoard::Layout`) est la source de vérité du plateau.** Les acteurs `ABoardNode` en sont
    une représentation générée. On modifie le layout, puis on synchronise (`FBoardLayoutSync`) ; jamais l'inverse.
 2. **Seul le module éditeur écrit le layout**, via `ABoard::SetLayout` (dans une transaction). Le jeu ne fait que le lire.
-   Exception temporaire : `ABoard::bAllowManualLayoutEdit` (§ 8.9), à supprimer à l'étape 4.
 3. **Liens explicites** : deux cases sont reliées **uniquement** si `Layout.Links` contient leur lien.
    Un lien relie deux cases **existantes, distinctes, voisines orthogonales** (`FBoardLayout::CanLink`).
    Supprimer une case supprime ses liens (`RemoveCell`).
@@ -203,7 +205,7 @@ Le visuel vient du type : créer un type dédié, sans comportement, et l'attrib
 1. Matériau : dans `Content/Materials/`, un Material `M_Node` avec un paramètre *Vector Parameter* `Color`
    branché sur *Base Color* ; puis clic droit > *Create Material Instance* > `MI_Node_Start`, régler `Color`.
 2. Dupliquer `DA_Node_Floor` en `DA_Node_Start` : `Display Name`, `Material Overrides` [0] = `MI_Node_Start`, `Behaviors` vide.
-3. Attribuer `DA_Node_Start` à la case (avec le mode « Plateau » ; en attendant : § 8.9).
+3. Attribuer `DA_Node_Start` à la case : mode « Plateau », sélectionner la case, « Type de case » (ou Ctrl + clic).
 Le joueur n'est pas lié à ce type : il apparaît là où l'entité joueur est placée. Si le départ doit
 toujours être coloré automatiquement, en discuter avec les GD (ce serait une règle à coder).
 
@@ -351,29 +353,14 @@ l'ignore, et l'Output Log l'indique.
 | Le clic du joueur ne fait rien en PIE | Le mesh n'a pas de collision (voir 8.1) |
 | Pas de traits entre les cases | `LinkMeshes` sans mesh dans `BP_Board` (réglage de BP, inchangé) |
 
-### 8.9 Corriger le layout à la main (temporaire, en attendant le mode « Plateau »)
+### 8.9 Après la migration de tous les niveaux (étape 4b)
 
-> **Obsolète depuis l'étape 3** : sélectionner la case dans le mode « Plateau » et utiliser la section
-> « Case sélectionnée ». Cette option sera supprimée à l'étape 4.
+Après l'import, compléter le niveau dans le mode « Plateau » (départ joueur, sortie… via « Case sélectionnée »).
 
-Cas typique : après l'import, la validation signale « Aucune case de sortie » ou « Aucun départ joueur » parce
-que l'ancien niveau ne les définissait pas (ou pas sur les instances). On complète alors le layout directement :
-
-1. Repérer les coordonnées des cases : chaque case générée s'appelle `Node_X_Y` dans l'Outliner (cliquer une case
-   dans le viewport la sélectionne). Repère de la grille : point jaune = (0, 0), flèche rouge = +X, flèche verte = +Y.
-2. Sélectionner `BP_Board`. Dans Details > *Board | Level*, cocher **Edition manuelle du layout (temporaire)**.
-3. Déplier `Layout` > `Cells`. Chaque élément affiche sa `Coord`.
-   - **Sortie** : sur la case voulue, `Node Type` = `DA_Node_Exit`.
-   - **Départ joueur** : sur la case voulue, `Entities` > **+** > `Type` = `DA_Entity_Player`, `Facing` au choix.
-   - Ne pas ajouter ni supprimer d'élément dans `Cells` ou `Links` : la `Coord` d'une nouvelle cellule n'est pas éditable.
-4. Décocher la case. Les cases de la scène se mettent à jour automatiquement (`FBoardAutoSync`). Console : `BoardEditor.Validate`.
-5. Sauvegarder le niveau, tester en PIE.
-
-### 8.10 Après la migration de tous les niveaux
-
-Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`,
-`FBoardLayoutSync::BuildLayoutFromLegacyScene`, la commande `ImportLegacy` et l'option
-`ABoard::bAllowManualLayoutEdit` (remettre `Layout` en `VisibleAnywhere`) (étape 4).
+Quand toutes les branches sont fusionnées dans `develop` et tous les niveaux migrés : supprimer les propriétés
+`_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`, `FBoardLayoutSync::BuildLayoutFromLegacyScene` et la
+commande `ImportLegacy`. D'ici là, ne pas les supprimer : un niveau d'une autre branche construit à l'ancienne
+ne pourrait plus être converti.
 
 ## 9. Journal des décisions
 
@@ -397,6 +384,9 @@ Supprimer les propriétés `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`
 | 11/11/2026 | Historique du brouillon par `FToolCommandChange` (copie avant / après du layout) | Mécanisme natif de l'ITF ; layouts petits |
 | 12/11/2026 | Détails d'une case = section « Case sélectionnée » du panneau ; entités placées depuis ces détails ; palette = liste déroulante + description ; « Erreur suivante » (sans Slate) | Choix de l'équipe : rapide à livrer, sans code Slate |
 | 12/11/2026 | Échap : tracé en cours, puis sélection, puis arrêt (et relance) de l'outil | Comportement standard des outils UE (annulations imbriquées) |
+| 12/11/2026 | Verrouillage léger : `NotPlaceable` + position verrouillée ; les cases restent sélectionnables (debug) | Choix de l'équipe : sûr sans gêner le débogage |
+| 12/11/2026 | Code de migration conservé jusqu'à la fusion de toutes les branches ; édition manuelle du `BP_Board` supprimée | D'autres branches peuvent contenir des niveaux à l'ancien format |
+| 12/11/2026 | Guide utilisateur = document partagé (Claude Docs), séparé de ce CLAUDE.md | Choix de l'équipe : lisible et commentable par les LD / GA sans le dépôt |
 | 11/11/2026 | Vue de dessus en perspective à l'entrée du mode, vue d'avant rétablie à la sortie (proposition de l'équipe) | Vue d'ensemble du plateau sans perdre l'éclairage ni la navigation habituelle |
 | 11/11/2026 | Aucun geste au clic droit (réservé à la caméra) ; effacer un lien = Shift + clic sans bouger | Décision d'équipe : éviter toute confusion. Remplace le « clic droit simple » écrit puis retiré le même jour |
 

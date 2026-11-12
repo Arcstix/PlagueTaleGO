@@ -18,12 +18,14 @@ class ABoard;
  *
  * Les cases sont GÉNÉRÉES par le Level Editor à partir du layout du ABoard (Submit) :
  * on ne les place pas et on ne les règle pas à la main.
+ * NotPlaceable : la classe (et ses BP enfants) n'apparaît pas dans « Place Actors » et ne se glisse pas
+ * dans le niveau ; le Level Editor la crée par code. Sa position est verrouillée à la génération.
  * - Son visuel et ses comportements viennent de son type (UBoardNodeType).
  * - Elle ne connaît PAS ses voisines : UBoardSubsystem les calcule à partir
  *   des liens explicites du layout.
  * - Les entités et objets de départ sont dans le layout, pas sur la case.
  */
-UCLASS()
+UCLASS(NotPlaceable)
 class PLAGUETALEGO_API ABoardNode : public AActor
 {
 	GENERATED_BODY()
