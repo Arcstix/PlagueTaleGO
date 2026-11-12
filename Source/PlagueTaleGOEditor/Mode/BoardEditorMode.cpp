@@ -324,7 +324,7 @@ void UBoardEditorMode::AskAboutPendingDraft()
 	{
 		const EAppReturnType::Type Force = FMessageDialog::Open(EAppMsgType::YesNo,
 			FText::Format(LOCTEXT("PendingDraftErrors", "The draft contains {0} error(s):\n\n{1}\n\nYes: submit anyway.\nNo: discard the changes."),
-				FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary(5)));
+				FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary()));
 		if (Force == EAppReturnType::Yes)
 		{
 			SubmitDraft(/*bIgnoreErrors*/ true);

@@ -15,7 +15,7 @@
  *   avec les tooltips de chaque UPROPERTY ;
  * - au lancement de la partie, le pion la reçoit dans ABoardPawn::ApplyPlacementSettings.
  *
- * Ajouter des réglages à un type = créer une sous-classe C++ (UPROPERTY(EditAnywhere) commentés),
+ * Ajouter des réglages à un type = créer une sous-classe C++ (UPROPERTY(EditAnywhere) avec un ToolTip en anglais),
  * puis la sélectionner dans le Data Asset. Le Level Editor n'a pas besoin d'être modifié.
  *
  * Mécanismes UE :

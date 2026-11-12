@@ -69,7 +69,7 @@ Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : quest
 | 2a | Mode « Board Editor » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
 | 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Top View » | ✅ Terminé et testé (12/11/2026) |
 | 3 | Sélection d'une case + section « Selected Cell » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Next Error » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
-| 4a | Verrouillage léger (`ABoardNode` en `NotPlaceable`, position verrouillée à la génération), suppression de l'édition manuelle temporaire du `BP_Board`, guide utilisateur (document partagé) | ✅ Écrit (12/11/2026), à compiler et tester |
+| 4a | Verrouillage léger (`ABoardNode` en `NotPlaceable`, position verrouillée à la génération), suppression de l'édition manuelle temporaire du `BP_Board`, guide utilisateur (document partagé) | ✅ Terminé et testé (12/11/2026, commit 45e3e37) |
 | 4b | Suppression du code de migration (§ 8.9) | Plus tard : quand toutes les branches seront fusionnées dans `develop` et leurs niveaux migrés |
 
 > Agent : mettre ce tableau à jour à chaque étape terminée.
@@ -103,6 +103,7 @@ Source/PlagueTaleGOEditor/                 (éditeur uniquement : jamais dans le
   Mode/BoardEditorModeCommands             Boutons de la barre d'outils du mode (TCommands)
   Mode/BoardEditorInputProcessor.h         Reçoit Échap avant les commandes de l'éditeur (préprocesseur Slate)
   Mode/BoardLayoutDraft                    UBoardLayoutDraft : copie du layout en cours d'édition + validation
+                                           + cases modifiées depuis le dernier Submit
   Tools/BoardEditTool                      UBoardEditTool : gestes, survol, sélection, aperçu ; ses 3 jeux de propriétés
                                            = le panneau (pinceau / brouillon / vue, case sélectionnée, aide)
   Tools/BoardDraftChange.h                 Étape d'historique Ctrl+Z du brouillon (FToolCommandChange)
@@ -114,7 +115,7 @@ Includes dans le module éditeur : même convention que le runtime, chemin depui
 ### Flux des données
 
 ```
-Data Assets (Content/Data/Board/…)          FBoardLayout (dans ABoard, sauvegardé avec le .umap)
+Data Assets (Content/Data/…)                FBoardLayout (dans ABoard, sauvegardé avec le .umap)
   UBoardNodeType   ◄──── référencés par ────  Cells[] : Coord, NodeType, NodeSettings, Entities[], Items[]
   UBoardEntityType ◄────────────────────────  Links  : TSet<FBoardLink>
   UBoardItemType   ◄────────────────────────
@@ -169,8 +170,8 @@ UBoardSubsystem (graphe = acteurs + Layout.Links)    ABoardGameMode (pions = Lay
 | `UBoardEntityType` | `PawnClass` ; `IsPlayer()` si dérivé de `APlayerPawn` | `ABoardGameMode` (spawn) |
 | `UBoardItemType` | `ItemClass` | (futur système d'objets) |
 
-Convention d'assets proposée : `Content/Data/Board/NodeTypes/DA_Node_<Nom>`, `.../Entities/DA_Entity_<Nom>`,
-`.../Items/DA_Item_<Nom>`. Les assets de `Content/Sandbox/` sont **ignorés** par le Level Editor.
+Convention d'assets : `Content/Data/Nodes/DA_Node_<Nom>`, `Content/Data/Entities/DA_Entity_<Nom>`,
+`Content/Data/Items/DA_Item_<Nom>`. Les assets de `Content/Sandbox/` sont **ignorés** par le Level Editor.
 
 ### Comportements de cases (Gameplay Tags testés par le code)
 
@@ -306,12 +307,12 @@ Le visuel d'une case vient de son type : il faut un Static Mesh **avec collision
 
 ### 8.2 Créer les dossiers
 
-Dans le Content Browser : `Content/Data/Board/NodeTypes/` et `Content/Data/Board/Entities/`
+Dans le Content Browser : `Content/Data/Nodes/` et `Content/Data/Entities/`
 (clic droit > *New Folder*). ⚠️ Jamais dans `Sandbox/` : le Level Editor ignore ce dossier.
 
 ### 8.3 Type de case « Sol » (obligatoire)
 
-1. Dans `Data/Board/NodeTypes/` : clic droit > *Miscellaneous* > *Data Asset*.
+1. Dans `Data/Nodes/` : clic droit > *Miscellaneous* > *Data Asset*.
 2. Dans la fenêtre *Pick Class For Data Asset Instance*, chercher **Board Node Type** et valider.
    (UE affiche les noms de classes avec des espaces. `Board Definition` n'apparaît pas : classe abstraite.)
 3. Nommer l'asset `DA_Node_Floor`, double-cliquer pour l'ouvrir.
@@ -339,7 +340,7 @@ Même principe : `DA_Node_Blocked`, `Behaviors` = **Board > Node > Blocked**, `S
 
 ### 8.6 Type d'entité « Joueur » (obligatoire)
 
-1. Dans `Data/Board/Entities/` : clic droit > *Miscellaneous* > *Data Asset* > **Board Entity Type**.
+1. Dans `Data/Entities/` : clic droit > *Miscellaneous* > *Data Asset* > **Board Entity Type**.
 2. Nommer `DA_Entity_Player`. `Display Name` = « Joueur », `Description` = « Point de départ du joueur (un seul par niveau) ».
 3. Catégorie *Entity* : `Pawn Class` = **BP_PlayerPawn**.
 4. Sauvegarder.
@@ -390,7 +391,7 @@ ne pourrait plus être converti.
 |---|---|---|
 | 12/11/2026 | Aperçu peu lisible (cercles blanc / vert / rouge sans légende) : un seul cercle d'état par case (rouge = erreur, orange = avertissement, vert = valide) + point central à la couleur du type | ✅ Testé (12/11/2026) |
 | 12/11/2026 | Ctrl + glisser : aucun retour visuel | ✅ Testé (12/11/2026) : cases touchées encadrées pendant le geste |
-| 12/11/2026 | Après le relâchement (avant Submit), rien n'indique les cases modifiées | ✅ Écrit (12/11/2026), à tester : carré fin à la couleur du type sur toute case modifiée (nouvelle, type, entités, objets, réglages, liens) |
+| 12/11/2026 | Après le relâchement (avant Submit), rien n'indique les cases modifiées | ✅ Testé (12/11/2026) |
 | 12/11/2026 | Submit refusé : lister les erreurs (5 max) dans la fenêtre au lieu de renvoyer au panneau | ✅ Testé (12/11/2026) |
 | 12/11/2026 | Échap ne désélectionne pas une case | ✅ Testé (12/11/2026) |
 | 12/11/2026 | Traduction anglaise selon la langue de l'éditeur | ✅ Remplacé (12/11/2026) : interface **en anglais uniquement** (panneau, messages de validation, noms / tooltips / catégories des Data Assets du plateau). Traduction française abandonnée (procédure trop lourde pour l'équipe) |

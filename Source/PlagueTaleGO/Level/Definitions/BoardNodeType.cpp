@@ -14,7 +14,7 @@ void UBoardNodeType::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 	// TObjectIterator parcourt tous les objets de cette classe chargés en mémoire (tous les niveaux ouverts).
 	// Le visuel est une donnée recalculée : pas besoin de Modify(), le niveau n'est pas marqué comme modifié.
-	// Changer NodeClass, en revanche, demande de recréer les acteurs : commande BoardEditor.Resync.
+	// Changer NodeClass, en revanche, demande de recréer les acteurs : c'est FBoardAutoSync (module éditeur) qui s'en charge.
 	for (TObjectIterator<ABoardNode> It; It; ++It)
 	{
 		ABoardNode* Node = *It;

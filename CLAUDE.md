@@ -79,7 +79,7 @@ Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par 
 | `M_` / `MI_` | Material / Material Instance | `Materials/` |
 | `L_` | Niveaux (pas de préfixe pour l'instant) | `Levels/` |
 | `SM_` | Static Meshes | `StaticMesh/` |
-| `DA_` | Data Asset de définition du Level Editor (`DA_Node_`, `DA_Entity_`, `DA_Item_`) | `Data/Board/NodeTypes/`, `Data/Board/Entities/`, `Data/Board/Items/` (proposition) |
+| `DA_` | Data Asset de définition du Level Editor (`DA_Node_`, `DA_Entity_`, `DA_Item_`) | `Data/Nodes/`, `Data/Entities/`, `Data/Items/` |
 
 - Pour un nouveau type d'asset, suivre la convention UE usuelle (`SM_` Static Mesh, `T_` Texture, `WBP_` Widget, `NS_` Niagara…).
 - `Sandbox/` : tests et prototypes, ne jamais les référencer depuis un niveau ou une classe de production. Le Level Editor ignore les Data Assets de ce dossier.

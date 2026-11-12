@@ -49,8 +49,11 @@ public:
 	// carré fin dans l'aperçu, jusqu'au prochain Submit. Les cases supprimées n'y sont pas (croix grise).
 	const TSet<FIntPoint>& GetModifiedCells() const { return ModifiedCells; }
 
-	// Les erreurs en liste à puces (au plus MaxLines, puis « … et N autre(s) ») pour une fenêtre de message
-	FText GetErrorSummary(int32 MaxLines) const;
+	// Nombre d'erreurs listées dans les fenêtres de message (Submit refusé, sortie du mode)
+	static constexpr int32 DialogMaxErrors = 5;
+
+	// Les erreurs en liste à puces (au plus MaxLines, puis « ... and N more ») pour une fenêtre de message
+	FText GetErrorSummary(int32 MaxLines = DialogMaxErrors) const;
 
 	// Diffusé après chaque changement du brouillon (l'outil met à jour son panneau)
 	FSimpleMulticastDelegate OnChanged;
@@ -68,9 +71,10 @@ private:
 	FBoardLayout Layout;
 
 	// L'historique Ctrl+Z garde des copies de layouts qui pointent vers des objets de réglages.
-	// Ce tableau les garde en vie (sinon le garbage collector pourrait les détruire).
+	// Cet ensemble les garde en vie (sinon le garbage collector pourrait les détruire).
+	// TSet : ajout sans recherche linéaire, à chaque modification du brouillon.
 	UPROPERTY()
-	TArray<TObjectPtr<UBoardPlacementSettings>> KeepAlive;
+	TSet<TObjectPtr<UBoardPlacementSettings>> KeepAlive;
 
 	bool bDirty = false;
 

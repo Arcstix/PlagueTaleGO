@@ -82,7 +82,7 @@ private:
 	// Appelé juste avant l'ouverture d'un autre niveau (l'ancien existe encore)
 	void HandleMapLoad(const FString& Filename, FCanLoadMap& OutCanLoadMap);
 
-	// Si le brouillon a des modifications non soumises : demande Soumettre / Abandonner
+	// Si le brouillon a des modifications non soumises : demande Submit (Yes) / Discard (No)
 	void AskAboutPendingDraft();
 
 	// L'outil « Board » s'il est actif

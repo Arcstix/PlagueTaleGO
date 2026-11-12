@@ -5,7 +5,7 @@
 
 /**
  * Commandes (boutons) du mode « Board Editor » : elles forment la barre d'outils du mode.
- * Une seule pour l'instant : l'outil « Board », qui regroupe tous les gestes (voir CLAUDE.md, § Interactions).
+ * Une seule pour l'instant : l'outil « Board », qui regroupe tous les gestes (voir CLAUDE.md, § 1 « Gestes de l'outil Board »).
  *
  * Mécanisme UE : TCommands déclare des actions d'interface (libellé, tooltip, raccourci éventuel).
  * Elles sont enregistrées au démarrage du module (FPlagueTaleGOEditorModule::StartupModule).

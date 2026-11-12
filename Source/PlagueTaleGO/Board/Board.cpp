@@ -8,7 +8,6 @@
 
 ABoard::ABoard()
 {
-	PrimaryActorTick.bCanEverTick = false;
 	// Le Tick sert uniquement à dessiner la grille dans l'éditeur
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;

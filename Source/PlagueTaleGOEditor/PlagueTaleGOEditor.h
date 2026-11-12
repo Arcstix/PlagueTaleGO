@@ -12,7 +12,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogBoardEditor, Log, All);
  * - Au démarrage : active la resynchronisation automatique de la scène (FBoardAutoSync)
  *   et enregistre les boutons du mode « Board Editor » (FBoardEditorModeCommands).
  * - Les commandes console s'enregistrent toutes seules (FAutoConsoleCommand),
- *   et le futur mode éditeur (UEdMode) sera découvert automatiquement par l'éditeur.
+ *   et le mode éditeur (UBoardEditorMode, un UEdMode) est découvert automatiquement par l'éditeur.
  */
 class FPlagueTaleGOEditorModule : public IModuleInterface
 {

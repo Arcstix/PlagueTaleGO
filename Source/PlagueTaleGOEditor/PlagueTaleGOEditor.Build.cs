@@ -1,7 +1,7 @@
 using System.IO;
 using UnrealBuildTool;
 
-// Module éditeur du projet : Level Editor (mode « Plateau ») et outils associés.
+// Module éditeur du projet : Level Editor (mode « Board Editor ») et outils associés.
 // Type « Editor » dans le .uproject : il n'est jamais compilé dans le jeu (ni en Shipping),
 // on peut donc y utiliser librement les API de l'éditeur (UnrealEd, Slate…).
 public class PlagueTaleGOEditor : ModuleRules
@@ -22,7 +22,7 @@ public class PlagueTaleGOEditor : ModuleRules
 			"UnrealEd",         // GEditor, transactions (Ctrl+Z), fonctions d'édition des acteurs
 			"AssetRegistry",    // recherche des Data Assets de définition
 			"GameplayTags",
-			// Mode éditeur « Plateau » (UEdMode) et Interactive Tools Framework (outils du viewport)
+			// Mode éditeur « Board Editor » (UEdMode) et Interactive Tools Framework (outils du viewport)
 			"EditorFramework",
 			"InteractiveToolsFramework",
 			"EditorInteractiveToolsFramework",

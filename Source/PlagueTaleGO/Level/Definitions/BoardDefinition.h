@@ -44,7 +44,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (MultiLine = true, ToolTip = "Help text shown in the Board Editor: what this type is for, when to use it."))
 	FText Description;
 
-	// Couleur utilisée par le Level Editor pour l'aperçu (cases fantômes, pastilles…)
+	// Couleur utilisée par le Level Editor pour l'aperçu (disque central des cases, flèches des entités…)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Color used in the Board Editor preview (center dot of cells, entity arrows...)."))
 	FLinearColor EditorColor = FLinearColor::White;
 

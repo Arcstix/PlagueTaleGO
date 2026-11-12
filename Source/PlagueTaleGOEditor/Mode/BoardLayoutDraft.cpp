@@ -84,7 +84,7 @@ void UBoardLayoutDraft::SetLayout(const FBoardLayout& NewLayout)
 	{
 		if (Settings)
 		{
-			KeepAlive.AddUnique(Settings);
+			KeepAlive.Add(Settings);
 		}
 	};
 	for (const FBoardCell& Cell : Layout.Cells)

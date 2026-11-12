@@ -178,8 +178,8 @@ public:
  * - Shift : un clic sans bouger efface le lien visé (ou la case) ; en glissant, efface les cases survolées.
  * Le tracé modifie le brouillon en direct (aperçu), puis forme UNE étape d'historique au relâchement.
  *
- * Échap : l'éditeur le propose d'abord à l'outil (IInteractiveToolNestedAcceptCancelAPI) : il annule le tracé
- * en cours, sinon désélectionne la case. Sinon, Échap arrête l'outil et le mode le relance.
+ * Échap : reçu avant l'éditeur (FBoardEditorInputProcessor → ExecuteNestedCancelCommand) : annule le tracé
+ * en cours, sinon désélectionne la case. Sinon, Échap garde son rôle habituel.
  * Le clic droit n'est pas utilisé : il reste réservé à la caméra (décision d'équipe, éviter la confusion).
  */
 UCLASS()
@@ -334,7 +334,6 @@ private:
 	bool bStrokeChanged = false;      // le tracé a modifié quelque chose
 	bool bStrokeMoved = false;        // la souris a quitté la case de départ
 	bool bStrokeCancelled = false;    // Échap pendant le tracé
-	bool bStartCellExisted = false;   // la case de départ existait avant le tracé
 	FIntPoint LastStrokeCell = FIntPoint::ZeroValue;
 	TOptional<FBoardLink> StrokeStartLink;   // Shift : lien visé à l'appui (effacé si on relâche sans bouger)
 	TSet<FIntPoint> StrokeTouchedCells;      // Ctrl : cases déjà touchées par le tracé (retour visuel)

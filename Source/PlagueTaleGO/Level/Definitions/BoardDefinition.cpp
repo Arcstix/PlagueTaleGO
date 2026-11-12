@@ -1,5 +1,4 @@
 ﻿#include "BoardDefinition.h"
-#include "PlagueTaleGO/Level/BoardPlacementSettings.h"
 
 FText UBoardDefinition::GetDisplayText() const
 {

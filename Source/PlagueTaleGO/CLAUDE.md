@@ -134,7 +134,7 @@ Aucun ennemi en C++. Des assets de prototype (`Sandbox/BP_WormTest`, `MI_Worm`, 
 
 **Objets** : `UBoardItem` est une base abstraite vide. Aucun objet concret. Le layout peut contenir des objets (`FBoardCell::Items`, type `UBoardItemType`), mais rien ne les utilise en jeu : ramassage non implémenté, `PendingItem` jamais renseigné.
 
-**Data Assets de définition** (types de cases / d'entités / d'objets) : aucun encore créé. À créer dans `Content/Data/Board/` (voir `/Source/PlagueTaleGOEditor/CLAUDE.md`).
+**Data Assets de définition** (types de cases / d'entités / d'objets) : `Content/Data/Nodes/` (`DA_Node_Floor`, `DA_Node_Exit`, `DA_Node_Start`, `DA_Node`), `Content/Data/Entities/` (`DA_Entity_Player`). Aucun type d'objet pour l'instant (`Content/Data/Items/` le moment venu). Voir `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 
 **États**
 | État | Statut |

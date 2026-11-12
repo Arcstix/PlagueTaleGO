@@ -57,6 +57,15 @@ namespace
 		return FText::Format(INVTEXT("({0}, {1})"), FText::AsNumber(Coord.X), FText::AsNumber(Coord.Y));
 	}
 
+	// Une ligne des listes « Problems » et « Cell Problems » : gravité + message
+	FString ProblemLine(const FBoardValidationMessage& Message)
+	{
+		const FText Line = Message.Severity == EBoardValidationSeverity::Error
+			? FText::Format(LOCTEXT("ProblemLine_Error", "Error: {0}"), Message.Text)
+			: FText::Format(LOCTEXT("ProblemLine_Warning", "Warning: {0}"), Message.Text);
+		return Line.ToString();
+	}
+
 	// Copie d'un objet de réglages appartenant à NewOuter (nullptr reste nullptr)
 	UBoardPlacementSettings* DuplicateSettings(const UBoardPlacementSettings* Settings, UObject* NewOuter)
 	{
@@ -442,7 +451,6 @@ void UBoardEditTool::OnClickPress(const FInputDeviceRay& PressPos)
 	StrokeStartLayout = Draft->GetLayout();
 	StrokeLayout = StrokeStartLayout;
 	bStrokeWasDirty = Draft->IsDirty();
-	bStartCellExisted = bCellExists;
 	LastStrokeCell = Cell;
 	HoveredCell = Cell;
 	HoveredLink = Link;
@@ -703,7 +711,6 @@ void UBoardEditTool::ResetStroke()
 	bStrokeChanged = false;
 	bStrokeMoved = false;
 	bStrokeCancelled = false;
-	bStartCellExisted = false;
 	StrokeStartLink.Reset();
 	StrokeTouchedCells.Reset();
 }
@@ -771,10 +778,7 @@ void UBoardEditTool::RefreshDetails(bool bCopyCellData)
 	{
 		if (Message.Cells.Contains(Cell->Coord))
 		{
-			const FText Line = Message.Severity == EBoardValidationSeverity::Error
-				? FText::Format(LOCTEXT("ProblemLine_Error", "Error: {0}"), Message.Text)
-				: FText::Format(LOCTEXT("ProblemLine_Warning", "Warning: {0}"), Message.Text);
-			Details->CellProblems.Add(Line.ToString());
+			Details->CellProblems.Add(ProblemLine(Message));
 		}
 	}
 
@@ -982,10 +986,7 @@ void UBoardEditTool::HandleDraftChanged()
 	Properties->Problems.Reset();
 	for (const FBoardValidationMessage& Message : Validation.Messages)
 	{
-		const FText Line = Message.Severity == EBoardValidationSeverity::Error
-			? FText::Format(LOCTEXT("ProblemLine_Error", "Error: {0}"), Message.Text)
-			: FText::Format(LOCTEXT("ProblemLine_Warning", "Warning: {0}"), Message.Text);
-		Properties->Problems.Add(Line.ToString());
+		Properties->Problems.Add(ProblemLine(Message));
 	}
 
 	// Le panneau ne se rafraîchit pas tout seul quand le code modifie des propriétés : on le prévient
@@ -1016,7 +1017,7 @@ void UBoardEditTool::RequestSubmit()
 
 	FMessageDialog::Open(EAppMsgType::Ok, FText::Format(
 		LOCTEXT("SubmitRefused", "Submit refused: the draft contains {0} error(s):\n\n{1}\n\nUse the \"Next Error\" button to go to the affected cells."),
-		FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary(5)));
+		FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary()));
 }
 
 void UBoardEditTool::RequestRevert()
