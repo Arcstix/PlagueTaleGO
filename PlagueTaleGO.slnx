@@ -10,14 +10,14 @@
     <Platform Name="Win64-arm64ec" />
   </Configurations>
   <Folder Name="/Engine/">
-    <Project Path="Intermediate/ProjectFiles/UE5.vcxproj" Id="96523e01-9734-30ff-8def-be5f8fbb97b5">
+    <Project Path="Intermediate/ProjectFiles/UE5.vcxproj" Id="3b755d14-56a5-3eb9-83dc-c0e91eae20be">
       <BuildType Project="BuiltWithUnrealBuildTool" />
       <Platform Project="Win64" />
       <Build Project="false" />
     </Project>
   </Folder>
   <Folder Name="/Games/">
-    <Project Path="Intermediate/ProjectFiles/PlagueTaleGO.vcxproj" Id="36ee4fd5-d643-3b18-845a-1075222a27c9">
+    <Project Path="Intermediate/ProjectFiles/PlagueTaleGO.vcxproj" Id="b637d29b-dc04-35ca-847c-929fdd160c22">
       <BuildType Solution="DebugGame Editor|Win64" Project="DebugGame_Editor" />
       <BuildType Solution="DebugGame Editor|Win64-arm64" Project="Win64_arm64_DebugGame_Editor" />
       <BuildType Solution="DebugGame Editor|Win64-arm64ec" Project="Win64_arm64ec_DebugGame_Editor" />
@@ -204,6 +204,9 @@
     </Project>
   </Folder>
   <Folder Name="/Rules/">
+    <Project Path="../../../../../Program Files/Epic Games/UE_5.8/Engine/Intermediate/Build/BuildRulesProjects/MarketplaceRules/MarketplaceRules.csproj">
+      <BuildType Project="Development" />
+    </Project>
     <Project Path="../../../../../Program Files/Epic Games/UE_5.8/Engine/Intermediate/Build/BuildRulesProjects/UE5ProgramRules/UE5ProgramRules.csproj">
       <BuildType Project="Development" />
     </Project>

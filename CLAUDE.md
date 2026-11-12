@@ -7,7 +7,7 @@
 
 - **GO-like** (inspiré de Hitman GO) dans l'univers **A Plague Tale**. Projet d'école M1 (1er trimestre), équipe GP / GA / GD / LD.
 - **Deadline : janvier 2027.**
-- **Unreal Engine 5.8** (5.8.3), C++, un seul module runtime : `PlagueTaleGO`.
+- **Unreal Engine 5.8** (5.8.3), C++. Deux modules : `PlagueTaleGO` (runtime, le jeu) et `PlagueTaleGOEditor` (éditeur uniquement, Level Editor).
 - **Cible : Desktop uniquement**, contrôle à la souris.
 - L'équipe découvre UE et le C++ cette année : Commenter tout mécanisme UE non évident.
 - Les **mécaniques ne sont pas figées**. Ne pas inventer de règle de jeu : en cas de doute sur une mécanique, **demander plutôt que supposer**.
@@ -29,13 +29,15 @@ L'équipe utilise l'app Claude, pas Claude Code : les CLAUDE.md ne sont **pas ch
 |---|---|
 | `/CLAUDE.md` | Ce fichier : projet, dépôt, assets, niveaux, git, glossaire |
 | `/Source/PlagueTaleGO/CLAUDE.md` | Architecture C++, invariants, normes de code, recettes, registre des entités |
+| `/Source/PlagueTaleGOEditor/CLAUDE.md` | Level Editor : données (`Level/`), outil (module éditeur), invariants, recettes d'extension, décisions |
 
 ## Plan du dépôt
 
 ```
-Source/PlagueTaleGO/    Code C++ du jeu (voir son CLAUDE.md)
-Content/                Assets .uasset / .umap (binaires, Git LFS)
-Config/                 Default*.ini : GameMode par défaut, map de démarrage, inputs
+Source/PlagueTaleGO/        Code C++ du jeu (voir son CLAUDE.md)
+Source/PlagueTaleGOEditor/  Code C++ de l'éditeur : Level Editor (voir son CLAUDE.md). Jamais compilé dans le jeu
+Content/                    Assets .uasset / .umap (binaires, Git LFS)
+Config/                     Default*.ini : GameMode par défaut, map de démarrage, inputs
 PlagueTaleGO.uproject
 ```
 
@@ -46,19 +48,25 @@ PlagueTaleGO.uproject
 ## Qui touche à quoi
 
 - **Devs (GP)** : tout le C++ et tous les Blueprints.
-- **LD / GA** : uniquement la **construction des niveaux** (placement d'acteurs, réglages dans le panneau Details). Aucun scripting Blueprint attendu de leur part.
+- **LD / GA** : uniquement la **construction des niveaux** : le plateau avec le **Level Editor**, le décor librement dans l'éditeur UE. Aucun scripting Blueprint attendu de leur part.
+- **GD / LD** : peuvent créer et régler les **Data Assets de définition** (types de cases, d'entités, d'objets) utilisés par le Level Editor.
 - Les Blueprints sont des **sous-classes minces** des classes C++ (mesh, matériaux, valeurs de réglage). La logique de jeu reste en C++.
 - Conséquence : toute donnée qu'un LD doit régler est un `UPROPERTY(EditAnywhere)` commenté et rangé dans une catégorie claire (ex. `Board|Level`).
 
-### Construire un niveau (état actuel)
+### Construire un niveau
+
+Le plateau (cases, types, liens, entités, objets) se configure **uniquement avec le Level Editor**.
+Guide utilisateur (LD / GA) : document partagé « Guide du Level Editor — Plague Tale GO » (https://claude.ai/artifact/QJjZaKR7saJu2GxhgbjC9h).
+Détails techniques, état d'avancement et recettes : `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 
 1. Placer **un seul** `BP_Board` : sa position est l'origine de la grille, `CellSize` la taille d'une case.
-2. Placer des cases (`ABoardNode` ou BP enfant) : elles se calent automatiquement sur la grille.
-3. Sur chaque case, si besoin : `StartingEntity` (pion créé au démarrage ; **un seul** départ joueur), `bIsExit`, `Item`, `bIsBlocked`.
-4. Bloquer un passage : bouton « Toggle Link Between Selected Nodes » du Board, avec exactement 2 cases sélectionnées.
-5. Placer une `CameraActor` avec le tag `BoardCamera`.
+2. Construire le plateau avec le **mode « Board Editor »** (liste déroulante des modes de l'éditeur > Board Editor) :
+   poser / tracer les cases, sélectionner une case pour régler ses entités (départ joueur…), puis « Submit ».
+   Niveau construit avant le Level Editor : le migrer d'abord avec la commande console `BoardEditor.ImportLegacy`.
+3. Placer une `CameraActor` avec le tag `BoardCamera`.
+4. Le décor est libre (hors Level Editor).
 
-Cette section est faire évoluer avec le développement destiné sur la branche `feature/LevelEditor`.
+Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par le Level Editor.
 
 ## Assets (Content/)
 
@@ -71,9 +79,10 @@ Cette section est faire évoluer avec le développement destiné sur la branche 
 | `M_` / `MI_` | Material / Material Instance | `Materials/` |
 | `L_` | Niveaux (pas de préfixe pour l'instant) | `Levels/` |
 | `SM_` | Static Meshes | `StaticMesh/` |
+| `DA_` | Data Asset de définition du Level Editor (`DA_Node_`, `DA_Entity_`, `DA_Item_`) | `Data/Nodes/`, `Data/Entities/`, `Data/Items/` |
 
 - Pour un nouveau type d'asset, suivre la convention UE usuelle (`SM_` Static Mesh, `T_` Texture, `WBP_` Widget, `NS_` Niagara…).
-- `Sandbox/` : tests et prototypes, ne jamais les référencer depuis un niveau ou une classe de production.
+- `Sandbox/` : tests et prototypes, ne jamais les référencer depuis un niveau ou une classe de production. Le Level Editor ignore les Data Assets de ce dossier.
 - `Developers/` : dossiers personnels.
 - Les assets binaires ne se fusionnent pas : prévenir l'équipe avant de modifier un BP ou un niveau partagé.
 
@@ -84,7 +93,7 @@ Cette section est faire évoluer avec le développement destiné sur la branche 
 - Commits au format **Conventional Commits**, description en français :
   `type(scope): description`
   - types : `feat`, `fix`, `refactor`, `docs`, `chore`
-  - scopes : `board`, `gameflow`, `entities`, `player`, `items`, `core`, `content`, `config`, `docs`, ou tout autre assocaitions en rapport avec la feature développée.
+  - scopes : `board`, `gameflow`, `entities`, `player`, `items`, `core`, `leveleditor`, `content`, `config`, `docs`, ou tout autre assocaitions en rapport avec la feature développée.
   - ex. : `feat(gameflow): ajout de l'état EnemyTurn`
 - Git LFS est configuré pour les assets (`.gitattributes`).
 
@@ -93,10 +102,15 @@ Cette section est faire évoluer avec le développement destiné sur la branche 
 | Terme (FR) | Code | Sens |
 |---|---|---|
 | Plateau / grille | `ABoard`, `UBoardSubsystem` | La grille du niveau et l'autorité qui la gère |
-| Case | `ABoardNode` | Une position de la grille, repérée par `GridCoord` (`FIntPoint`) |
-| Lien | `FBoardLink` | Passage entre deux cases voisines (4 directions, pas de diagonale) |
-| Lien bloqué | `ABoard::BlockedLinks` | Passage fermé entre deux cases voisines |
-| Case de sortie | `ABoardNode::bIsExit` | L'atteindre fait gagner |
+| Case | `ABoardNode` | Une position de la grille, repérée par `GridCoord` (`FIntPoint`). Acteur généré par le Level Editor |
+| Layout | `FBoardLayout` (`ABoard::Layout`) | Description complète du plateau d'un niveau : source de vérité |
+| Lien | `FBoardLink` | Passage explicite entre deux cases voisines (4 directions, pas de diagonale). Pas de lien = pas de passage |
+| Type de case | `UBoardNodeType` | Data Asset : visuel + comportements d'une case |
+| Comportement | Gameplay Tag `Board.Node.*` | Règle portée par un type de case (ex. `Board.Node.Exit`) |
+| Case de sortie | comportement `Board.Node.Exit` | L'atteindre fait gagner |
+| Définition | `UBoardDefinition` | Data Asset manipulé par le Level Editor (type de case, d'entité, d'objet) |
+| Réglages | `UBoardPlacementSettings` | Paramètres propres à un élément placé (ex. patrouille d'un ennemi) |
+| Brouillon / Submit | Level Editor | Copie du layout en cours d'édition / validation + écriture dans le Board |
 | Pion / entité | `ABoardPawn` | Tout acteur qui occupe une case (joueur, futurs ennemis) |
 | Intention | `FPlayerIntent` | Ce que le joueur veut faire (clic sur une case…), interprétée par l'état courant |
 | État | `UGameFlowState` | Une étape de la partie (tour joueur, tour ennemi, victoire…) |

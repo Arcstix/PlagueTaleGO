@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BoardTypes.h"
+#include "PlagueTaleGO/Level/BoardLayout.h"
 #include "GameFramework/Actor.h"
 #include "Board.generated.h"
 
@@ -11,7 +12,10 @@ class UInstancedStaticMeshComponent;
 
 /**
  * Un seul par niveau. Définit la grille (origine = position de l'acteur),
- * stocke les liens bloqués et dessine tous les liens ouverts.
+ * porte le layout du niveau (cases, liens, entités, objets) et dessine les liens.
+ *
+ * Le layout n'est modifiable QUE par le Level Editor (module PlagueTaleGOEditor) :
+ * il est en lecture seule dans le panneau Details. Voir Source/PlagueTaleGOEditor/CLAUDE.md.
  */
 UCLASS()
 class PLAGUETALEGO_API ABoard : public AActor
@@ -29,26 +33,57 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Grid", meta = (ClampMin = "10"))
 	float CellSize = 200.f;
 	
-	// Passages fermés entre deux cases voisines
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Grid")
-	TSet<FBoardLink> BlockedLinks;
-
     FIntPoint WorldToGrid(const FVector& Location) const;
     FVector   GridToWorld(FIntPoint Coord) const;
+
+	// --- Layout du niveau ---
+	const FBoardLayout& GetLayout() const { return Layout; }
+
+	// Vrai si un lien a été tracé entre A et B
+	bool HasLink(FIntPoint A, FIntPoint B) const { return Layout.HasLink(A, B); }
+
+#if WITH_EDITOR
+	/**
+	 * Remplace le layout. Réservé au Level Editor (Submit) : ne pas appeler ailleurs.
+	 * Appelle Modify() (Ctrl+Z) et duplique les réglages pour qu'ils appartiennent à ce Board.
+	 * Ne met PAS à jour les acteurs ABoardNode : c'est le rôle de FBoardLayoutSync (module éditeur).
+	 */
+	void SetLayout(const FBoardLayout& NewLayout);
+#endif
+
+#if WITH_EDITORONLY_DATA
+	// Ancien format, lu uniquement par la migration (commande BoardEditor.ImportLegacy)
+	const TSet<FBoardLink>& GetLegacyBlockedLinks() const { return BlockedLinks_DEPRECATED; }
+#endif
 
 	// --- Visuels des liens ---
 	// Bouton « Rebuild Link Visuals » dans le panneau Details
 	UFUNCTION(CallInEditor, Category = "Board|Edition")
 	void RebuildLinkVisuals();
-	
-	bool IsLinkBlocked(FIntPoint A, FIntPoint B) const;
 
-    UFUNCTION(CallInEditor, Category = "Board|Édition")
-	void ToggleLinkBetweenSelectedNodes(); // sélectionner 2 cases → bloquer/débloquer
-	
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
+
+#if WITH_EDITOR
+	// Après un Ctrl+Z, le layout a pu changer : on redessine les liens
+	virtual void PostEditUndo() override;
+#endif
+
+	// --- Layout du niveau ---
+
+	// Le plateau du niveau : cases, liens, entités de départ, objets.
+	// Lecture seule ici : se modifie uniquement avec le mode « Board Editor » du Level Editor.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	FBoardLayout Layout;
+
+#if WITH_EDITORONLY_DATA
+	// Ancien format (liens bloqués entre cases voisines). Le suffixe _DEPRECATED permet de relire
+	// les niveaux sauvegardés avant le Level Editor, sans jamais réécrire la valeur.
+	// TEMPORAIRE : à supprimer quand tous les niveaux auront été migrés.
+	UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Remplacé par Layout.Links (liens explicites)."))
+	TSet<FBoardLink> BlockedLinks_DEPRECATED;
+#endif
 
 	// --- Aperçu de la grille (éditeur uniquement) ---
 	UPROPERTY(EditAnywhere, Category = "Board|Grid Preview")

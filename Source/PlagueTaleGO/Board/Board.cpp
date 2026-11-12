@@ -2,20 +2,12 @@
 
 
 #include "Board.h"
-#include "BoardNode.h"
-#include "EngineUtils.h"
-#include "DrawDebugHelpers.h" 
+#include "DrawDebugHelpers.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "PlagueTaleGO/PlagueTaleGO.h"
 
-#if WITH_EDITOR
-#include "Editor.h"            // GEditor
-#include "Engine/Selection.h"  // USelection
-#endif
-
 ABoard::ABoard()
 {
-	PrimaryActorTick.bCanEverTick = false;
 	// Le Tick sert uniquement à dessiner la grille dans l'éditeur
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -64,35 +56,33 @@ FVector ABoard::GridToWorld(FIntPoint Coord) const
 		Origin.Z);                                           // hauteur du Board
 }
 
-bool ABoard::IsLinkBlocked(FIntPoint A, FIntPoint B) const
-{
-	return BlockedLinks.Contains(FBoardLink::Make(A, B));
-}
-
-void ABoard::ToggleLinkBetweenSelectedNodes()
-{
 #if WITH_EDITOR
-	if (!GEditor) return;
+void ABoard::SetLayout(const FBoardLayout& NewLayout)
+{
+	// Modify() enregistre l'état actuel dans la transaction en cours : c'est ce qui rend Ctrl+Z possible
+	Modify();
 
-	TArray<ABoardNode*> Selected;
-	GEditor->GetSelectedActors()->GetSelectedObjects<ABoardNode>(Selected);
-	if (Selected.Num() != 2) return;           // TODO : message d'erreur
+	Layout = NewLayout;
 
-	// … vérifier qu'elles sont voisines, puis :
-	Modify();                                   // pour Ctrl+Z
-	const FBoardLink Link = FBoardLink::Make(Selected[0]->GetGridCoord(), Selected[1]->GetGridCoord());
-	if (BlockedLinks.Contains(Link)) BlockedLinks.Remove(Link);
-	else                             BlockedLinks.Add(Link);
+	// Le layout reçu peut venir du brouillon du Level Editor : ses objets de réglages
+	// appartiennent à l'outil. On en fait des copies qui appartiennent au Board (sauvegardées avec le niveau).
+	Layout.DeepCopySettings(this);
 
 	RebuildLinkVisuals();
-#endif
 }
+
+void ABoard::PostEditUndo()
+{
+	Super::PostEditUndo();
+	RebuildLinkVisuals();
+}
+#endif
 
 void ABoard::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-	
-	// Rejoué aussi quand on modifie une propriété (ex. BlockedLinks) dans le panneau Details
+
+	// Rejoué aussi au chargement, au déplacement du Board et après un Ctrl+Z
 	RebuildLinkVisuals();
 }
 
@@ -181,60 +171,42 @@ void ABoard::RebuildLinkVisuals()
 	LinkMeshes->ClearInstances();
 
 	UStaticMesh* Mesh = LinkMeshes->GetStaticMesh();
-	UWorld* World = GetWorld();
-	if (!Mesh || !World)
+	if (!Mesh)
 	{
-		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Board] Pas de mesh sur LinkMeshes (Mesh=%s)"), *GetNameSafe(Mesh));
-		return;   // aucun mesh choisi dans le Blueprint : rien à dessiner
+		// Normal sur la classe C++ seule : le mesh est choisi dans BP_Board
+		UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[Board] Pas de mesh sur LinkMeshes : aucun trait dessiné."));
+		return;
 	}
 
 	// Longueur du mesh sur son axe X, pour l'étirer à la bonne taille
 	const float MeshLength = FMath::Max(Mesh->GetBounds().BoxExtent.X * 2.f, 1.f);
 
-	// 1. Toutes les cases du niveau, rangées par coordonnées.
-	//    (On recalcule les coordonnées depuis la position : en éditeur,
-	//     le subsystem n'existe pas et GridCoord peut ne pas être encore à jour.)
-	TMap<FIntPoint, ABoardNode*> Nodes;
-	for (TActorIterator<ABoardNode> It(World); It; ++It)
+	// Un trait par lien du layout. Les positions viennent de la grille (le plateau est plat),
+	// pas des acteurs ABoardNode : les traits restent justes même si les acteurs ne sont pas encore générés.
+	for (const FBoardLink& Link : Layout.Links)
 	{
-		Nodes.Add(WorldToGrid(It->GetActorLocation()), *It);
-	}
-
-	UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Board] %d cases trouvées"), Nodes.Num());
-
-	// 2. Pour chaque case, seulement les voisins EST et NORD :
-	//    chaque lien n'est ainsi dessiné qu'une fois.
-	const FIntPoint Directions[] = { {1, 0}, {0, 1} };
-
-	for (const TPair<FIntPoint, ABoardNode*>& Pair : Nodes)
-	{
-		UE_LOG(LogPlagueTaleGO, Warning, TEXT("   %s -> (%d, %d)"), *GetNameSafe(Pair.Value), Pair.Key.X, Pair.Key.Y);
-		for (const FIntPoint& Dir : Directions)
+		if (!Layout.HasCell(Link.A) || !Layout.HasCell(Link.B))
 		{
-			const FIntPoint OtherCoord = Pair.Key + Dir;
-			ABoardNode* const* Other = Nodes.Find(OtherCoord);
-			if (!Other || IsLinkBlocked(Pair.Key, OtherCoord))
-			{
-				continue;
-			}
-
-			const FVector Start = Pair.Value->GetActorLocation();
-			const FVector End   = (*Other)->GetActorLocation();
-			const FVector Delta = End - Start;
-			const float Length  = Delta.Size() - 2.f * LinkGap;
-			if (Length <= KINDA_SMALL_NUMBER)
-			{
-				continue;   // cases trop proches pour dessiner un trait
-			}
-
-			const FVector Mid = (Start + End) * 0.5f + FVector(0.f, 0.f, LinkZOffset);
-			const FTransform InstanceTransform(
-				Delta.Rotation(),
-				Mid,
-				FVector(Length / MeshLength, LinkThickness, LinkThickness));
-
-			LinkMeshes->AddInstance(InstanceTransform, /*bWorldSpace*/ true);
+			continue;   // lien vers une case absente : signalé par la validation
 		}
+
+		const FVector Start = GridToWorld(Link.A);
+		const FVector End   = GridToWorld(Link.B);
+		const FVector Delta = End - Start;
+		const float Length  = Delta.Size() - 2.f * LinkGap;
+		if (Length <= KINDA_SMALL_NUMBER)
+		{
+			continue;   // cases trop proches pour dessiner un trait
+		}
+
+		const FVector Mid = (Start + End) * 0.5f + FVector(0.f, 0.f, LinkZOffset);
+		const FTransform InstanceTransform(
+			Delta.Rotation(),
+			Mid,
+			FVector(Length / MeshLength, LinkThickness, LinkThickness));
+
+		LinkMeshes->AddInstance(InstanceTransform, /*bWorldSpace*/ true);
 	}
-	UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Board] %d traits dessinés"), LinkMeshes->GetInstanceCount());
+
+	UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[Board] %d traits dessinés"), LinkMeshes->GetInstanceCount());
 }

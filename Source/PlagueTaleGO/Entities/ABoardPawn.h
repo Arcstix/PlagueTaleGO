@@ -9,6 +9,7 @@
 class ABoardNode;
 class UStaticMeshComponent;
 class ABoardPawn;
+class UBoardPlacementSettings;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityMoveFinished, ABoardPawn*, Entity);
 
@@ -20,6 +21,13 @@ class PLAGUETALEGO_API ABoardPawn : public AActor
 public:
 	ABoardPawn();
 	void SnapToNode(ABoardNode* Node);
+
+	/**
+	 * Reçoit les réglages de son placement (Level Editor) juste après sa création, AVANT BeginPlay.
+	 * Settings est nul si le type d'entité n'a pas de SettingsClass.
+	 * À surcharger dans les pions qui ont des réglages : Cast<UMesReglages>(Settings).
+	 */
+	virtual void ApplyPlacementSettings(const UBoardPlacementSettings* Settings) {}
 
 	// Suppose la case déjà validée par le Board
 	UFUNCTION(BlueprintCallable, Category = "Board")

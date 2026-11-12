@@ -21,8 +21,8 @@ struct FNodeOccupants
 };
 
 /**
- * Seule autorité sur le plateau : graphe (calculé depuis la grille),
- * occupation des cases et validation des déplacements.
+ * Seule autorité sur le plateau en jeu : graphe (cases ABoardNode + liens explicites
+ * du layout du ABoard), occupation des cases et validation des déplacements.
  */
 UCLASS()
 class PLAGUETALEGO_API UBoardSubsystem : public UWorldSubsystem
@@ -33,14 +33,19 @@ public:
 	// Construit le graphe. Appelé par le moteur avant les BeginPlay des acteurs.
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 
+	// Le Board du niveau (grille + layout), ou nullptr s'il n'y en a pas
+	UFUNCTION(BlueprintPure, Category = "Board")
+	ABoard* GetBoard() const { return Board; }
+
 	// --- Graphe ---
 	UFUNCTION(BlueprintPure, Category = "Board")
 	ABoardNode* GetNodeAt(FIntPoint Coord) const;
 
-	// Vrai si A et B sont voisines sur la grille ET que le lien n'est pas bloqué
+	// Vrai si un lien a été tracé entre A et B dans le Level Editor
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool AreLinked(const ABoardNode* A, const ABoardNode* B) const;
 
+	// Cases reliées à Node par un lien
 	UFUNCTION(BlueprintPure, Category = "Board")
 	TArray<ABoardNode*> GetNeighbors(const ABoardNode* Node) const;
 	

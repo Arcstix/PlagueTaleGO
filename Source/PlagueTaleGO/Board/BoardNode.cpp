@@ -3,18 +3,50 @@
 
 #include "BoardNode.h"
 #include "Board.h"
+#include "BoardTags.h"
 #include "EngineUtils.h"   // TActorIterator
+#include "Components/StaticMeshComponent.h"
+#include "PlagueTaleGO/Entities/ABoardPawn.h"
+#include "PlagueTaleGO/Items/BoardItem.h"
+#include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
 
-// Sets default values
 ABoardNode::ABoardNode()
 {
 	// Les nœuds n'ont pas besoin de Tick
 	PrimaryActorTick.bCanEverTick = false;
+
+	NodeMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NodeMesh"));
+	RootComponent = NodeMesh;
+}
+
+bool ABoardNode::HasBehavior(FGameplayTag Behavior) const
+{
+	return NodeType && NodeType->HasBehavior(Behavior);
+}
+
+bool ABoardNode::IsBlocked() const
+{
+	return bRuntimeBlocked || HasBehavior(BoardTags::Node_Blocked);
+}
+
+bool ABoardNode::IsExit() const
+{
+	return HasBehavior(BoardTags::Node_Exit);
+}
+
+void ABoardNode::SetNodeType(UBoardNodeType* InNodeType)
+{
+	NodeType = InNodeType;
+	ApplyNodeTypeVisuals();
 }
 
 void ABoardNode::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
+
+	// Le visuel est toujours recalculé depuis le type. Modifier l'asset du type met aussi
+	// à jour les cases immédiatement (UBoardNodeType::PostEditChangeProperty).
+	ApplyNodeTypeVisuals();
 
 	ABoard* Board = FindBoard();
 	if (!Board)
@@ -29,20 +61,37 @@ void ABoardNode::OnConstruction(const FTransform& Transform)
 }
 
 #if WITH_EDITOR
-void ABoardNode::PostEditMove(bool bFinished)
+void ABoardNode::PostEditUndo()
 {
-	Super::PostEditMove(bFinished);
+	Super::PostEditUndo();
+	ApplyNodeTypeVisuals();
+}
+#endif
 
-	// Seulement quand on lâche la case, pour ne pas tout redessiner à chaque pixel
-	if (bFinished)
+void ABoardNode::ApplyNodeTypeVisuals()
+{
+	if (!NodeMesh)
 	{
-		if (ABoard* Board = FindBoard())
+		return;
+	}
+
+	NodeMesh->SetStaticMesh(NodeType ? NodeType->Mesh.Get() : nullptr);
+	NodeMesh->SetRelativeScale3D(NodeType ? NodeType->MeshScale : FVector::OneVector);
+
+	// On repart des matériaux du mesh, puis on applique les surcharges du type (case vide = pas de surcharge)
+	NodeMesh->EmptyOverrideMaterials();
+	if (!NodeType)
+	{
+		return;
+	}
+	for (int32 Index = 0; Index < NodeType->MaterialOverrides.Num(); ++Index)
+	{
+		if (UMaterialInterface* Material = NodeType->MaterialOverrides[Index])
 		{
-			Board->RebuildLinkVisuals();
+			NodeMesh->SetMaterial(Index, Material);
 		}
 	}
 }
-#endif
 
 ABoard* ABoardNode::FindBoard() const
 {
