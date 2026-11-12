@@ -14,7 +14,7 @@
  *
  * Le joueur est l'entité dont PawnClass dérive de APlayerPawn (un seul par niveau).
  */
-UCLASS(BlueprintType, meta = (ToolTip = "A starting entity type for the Board mode (Level Editor): player, enemies..."))
+UCLASS(BlueprintType, meta = (ToolTip = "A starting entity type for the Board Editor: player, enemies..."))
 class PLAGUETALEGO_API UBoardEntityType : public UBoardDefinition
 {
 	GENERATED_BODY()

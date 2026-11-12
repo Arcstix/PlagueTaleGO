@@ -24,7 +24,7 @@ const FString UBoardEditorMode::EditToolName = TEXT("BoardEditTool");
 UBoardEditorMode::UBoardEditorMode()
 {
 	// Nom et visibilité dans le menu des modes de l'éditeur
-	Info = FEditorModeInfo(ModeId, LOCTEXT("ModeName", "Board"), FSlateIcon(), /*bIsVisible*/ true);
+	Info = FEditorModeInfo(ModeId, LOCTEXT("ModeName", "Board Editor"), FSlateIcon(), /*bIsVisible*/ true);
 }
 
 void UBoardEditorMode::Enter()
@@ -47,7 +47,7 @@ void UBoardEditorMode::Enter()
 	if (!Board)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok,
-			LOCTEXT("NoBoard", "No BP_Board in this level.\n\nPlace a BP_Board (grid origin), then reopen the \"Board\" mode."));
+			LOCTEXT("NoBoard", "No BP_Board in this level.\n\nPlace a BP_Board (grid origin), then reopen the \"Board Editor\" mode."));
 		return;
 	}
 

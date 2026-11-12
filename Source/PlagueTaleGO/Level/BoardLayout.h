@@ -94,7 +94,7 @@ struct PLAGUETALEGO_API FBoardLayout
 	GENERATED_BODY()
 
 	// Les cases du plateau
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Cells", ToolTip = "Board cells. Edited only with the Board mode."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Cells", ToolTip = "Board cells. Edited only with the Board Editor."))
 	TArray<FBoardCell> Cells;
 
 	// Liens explicites entre cases voisines. Pas de lien = pas de passage.

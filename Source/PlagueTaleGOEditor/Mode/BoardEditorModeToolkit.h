@@ -4,7 +4,7 @@
 #include "Toolkits/BaseToolkit.h"
 
 /**
- * Panneau du mode « Board » (à gauche de l'éditeur quand le mode est actif).
+ * Panneau du mode « Board Editor » (à gauche de l'éditeur quand le mode est actif).
  *
  * On garde le panneau standard d'UE : barre d'outils générée depuis FBoardEditorModeCommands,
  * puis les propriétés de l'outil actif (UBoardEditToolProperties), affichées comme un panneau Details.

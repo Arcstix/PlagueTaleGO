@@ -73,7 +73,7 @@ protected:
 	// --- Layout du niveau ---
 
 	// Le plateau du niveau : cases, liens, entités de départ, objets.
-	// Lecture seule ici : se modifie uniquement avec le mode « Board » du Level Editor.
+	// Lecture seule ici : se modifie uniquement avec le mode « Board Editor » du Level Editor.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Level")
 	FBoardLayout Layout;
 

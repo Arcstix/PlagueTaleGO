@@ -18,7 +18,7 @@ class UMaterialInterface;
  * - Visuel : Mesh / MaterialOverrides / MeshScale, appliqués sur ABoardNode::NodeMesh.
  * - Classe : NodeClass, seulement si ce type a besoin d'un comportement C++ propre.
  */
-UCLASS(BlueprintType, meta = (ToolTip = "A cell type for the Board mode (Level Editor): visuals and behaviors of the cells."))
+UCLASS(BlueprintType, meta = (ToolTip = "A cell type for the Board Editor: visuals and behaviors of the cells."))
 class PLAGUETALEGO_API UBoardNodeType : public UBoardDefinition
 {
 	GENERATED_BODY()
@@ -36,7 +36,7 @@ public:
 #endif
 
 	// Type présélectionné dans le pinceau du Level Editor. Cocher sur UN seul type (en général « Sol »).
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Type preselected in the Board mode brush. Check it on ONE type only (usually Floor)."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Type preselected in the Board Editor brush. Check it on ONE type only (usually Floor)."))
 	bool bIsDefaultType = false;
 
 	// --- Comportement ---

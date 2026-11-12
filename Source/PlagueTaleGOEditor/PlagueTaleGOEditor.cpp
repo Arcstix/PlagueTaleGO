@@ -8,7 +8,7 @@ DEFINE_LOG_CATEGORY(LogBoardEditor);
 void FPlagueTaleGOEditorModule::StartupModule()
 {
 	FBoardAutoSync::Register();
-	// Boutons du mode « Board » (le mode lui-même est découvert automatiquement par l'éditeur)
+	// Boutons du mode « Board Editor » (le mode lui-même est découvert automatiquement par l'éditeur)
 	FBoardEditorModeCommands::Register();
 	UE_LOG(LogBoardEditor, Log, TEXT("[BoardEditor] Module éditeur chargé."));
 }

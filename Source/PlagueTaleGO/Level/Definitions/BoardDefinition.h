@@ -37,15 +37,15 @@ public:
 	// --- Présentation dans le Level Editor ---
 
 	// Nom affiché dans la palette et les messages. Vide = nom de l'asset.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Name shown in the Board mode and in messages. Empty = asset name."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Name shown in the Board Editor and in messages. Empty = asset name."))
 	FText DisplayName;
 
 	// Texte d'aide affiché dans le Level Editor : à quoi sert ce type, quand l'utiliser.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (MultiLine = true, ToolTip = "Help text shown in the Board mode: what this type is for, when to use it."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (MultiLine = true, ToolTip = "Help text shown in the Board Editor: what this type is for, when to use it."))
 	FText Description;
 
 	// Couleur utilisée par le Level Editor pour l'aperçu (cases fantômes, pastilles…)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Color used in the Board mode preview (center dot of cells, entity arrows...)."))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Color used in the Board Editor preview (center dot of cells, entity arrows...)."))
 	FLinearColor EditorColor = FLinearColor::White;
 
 	// Icône de la palette (optionnelle). Référence « soft » : la texture n'est pas chargée en jeu.

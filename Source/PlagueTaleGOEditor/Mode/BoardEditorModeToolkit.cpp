@@ -20,7 +20,7 @@ FName FBoardEditorModeToolkit::GetToolkitFName() const
 
 FText FBoardEditorModeToolkit::GetBaseToolkitName() const
 {
-	return LOCTEXT("ToolkitName", "Board");
+	return LOCTEXT("ToolkitName", "Board Editor");
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -7,7 +7,7 @@
 #include "BoardEditorMode.h"
 
 /**
- * Intercepte Échap AVANT l'éditeur, pendant que le mode « Board » est actif.
+ * Intercepte Échap AVANT l'éditeur, pendant que le mode « Board Editor » est actif.
  *
  * Pourquoi : dans le viewport, l'éditeur associe Échap à ses propres commandes (« tout désélectionner »…),
  * traitées avant que la touche n'atteigne le mode et son outil. Un « préprocesseur d'entrées » Slate

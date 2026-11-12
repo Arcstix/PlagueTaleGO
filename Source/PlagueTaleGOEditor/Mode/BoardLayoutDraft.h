@@ -10,7 +10,7 @@ class ABoard;
 class UBoardPlacementSettings;
 
 /**
- * Brouillon du mode « Board » : une copie du layout du Board, modifiée par l'outil.
+ * Brouillon du mode « Board Editor » : une copie du layout du Board, modifiée par l'outil.
  * Tant qu'il n'est pas soumis, ni le Board ni la scène ne changent : seul l'aperçu montre le brouillon.
  *
  * - Créé par UBoardEditorMode à l'entrée dans le mode, soumis par UBoardEditorMode::SubmitDraft.

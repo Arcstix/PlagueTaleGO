@@ -6,7 +6,7 @@
 FBoardEditorModeCommands::FBoardEditorModeCommands()
 	: TCommands<FBoardEditorModeCommands>(
 		TEXT("BoardEditorMode"),
-		LOCTEXT("ContextDescription", "Level Editor (Board)"),
+		LOCTEXT("ContextDescription", "Board Editor"),
 		NAME_None,
 		FAppStyle::GetAppStyleSetName())
 {

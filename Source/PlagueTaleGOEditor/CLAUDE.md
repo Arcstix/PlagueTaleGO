@@ -66,7 +66,7 @@ Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : quest
 | Étape | Contenu | Statut |
 |---|---|---|
 | 1 | Modèle de données (layout, définitions, réglages), liens explicites en jeu, validation enfichable, module éditeur, synchronisation scène, migration, commandes console | ✅ Terminé et testé (11/11/2026, commit 2245e2d) |
-| 2a | Mode « Board » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
+| 2a | Mode « Board Editor » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
 | 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Top View » | ✅ Terminé et testé (12/11/2026) |
 | 3 | Sélection d'une case + section « Selected Cell » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Next Error » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
 | 4a | Verrouillage léger (`ABoardNode` en `NotPlaceable`, position verrouillée à la génération), suppression de l'édition manuelle temporaire du `BP_Board`, guide utilisateur (document partagé) | ✅ Écrit (12/11/2026), à compiler et tester |
@@ -214,7 +214,7 @@ Le visuel vient du type : créer un type dédié, sans comportement, et l'attrib
 1. Matériau : dans `Content/Materials/`, un Material `M_Node` avec un paramètre *Vector Parameter* `Color`
    branché sur *Base Color* ; puis clic droit > *Create Material Instance* > `MI_Node_Start`, régler `Color`.
 2. Dupliquer `DA_Node_Floor` en `DA_Node_Start` : `Display Name`, `Material Overrides` [0] = `MI_Node_Start`, `Behaviors` vide.
-3. Attribuer `DA_Node_Start` à la case : mode « Board », sélectionner la case, « Cell Type » (ou Ctrl + clic).
+3. Attribuer `DA_Node_Start` à la case : mode « Board Editor », sélectionner la case, « Cell Type » (ou Ctrl + clic).
 Le joueur n'est pas lié à ce type : il apparaît là où l'entité joueur est placée. Si le départ doit
 toujours être coloré automatiquement, en discuter avec les GD (ce serait une règle à coder).
 
@@ -236,7 +236,7 @@ toujours être coloré automatiquement, en discuter avec les GD (ce serait une r
 2. Dans le Data Asset du type, choisir cette classe dans `SettingsClass`.
 3. Côté jeu : surcharger `ABoardPawn::ApplyPlacementSettings` et faire un `Cast` vers la classe de réglages.
    Les réglages arrivent **avant** `BeginPlay`.
-4. Dans le mode « Board », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
+4. Dans le mode « Board Editor », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
    entité ou d'un objet (section « Selected Cell »). Les placements déjà soumis les reçoivent à leur prochaine édition ;
    en attendant, gérer `Settings == nullptr` (valeurs par défaut).
 
@@ -317,7 +317,7 @@ Dans le Content Browser : `Content/Data/Board/NodeTypes/` et `Content/Data/Board
 3. Nommer l'asset `DA_Node_Floor`, double-cliquer pour l'ouvrir.
 4. Catégorie *Level Editor* : `Display Name` = « Sol », `Description` = « Case normale, traversable »,
    `Editor Color` au choix, `Sort Order` = 0. Laisser `Settings Class` vide.
-   Cocher `Is Default Type` : c'est le type présélectionné dans le pinceau du mode « Board ».
+   Cocher `Is Default Type` : c'est le type présélectionné dans le pinceau du mode « Board Editor ».
 5. Catégorie *Node* : `Behaviors` **vide** (c'est ce qui en fait le type « sol » pour la migration),
    `Node Class` = `BoardNode` (valeur par défaut, ne pas toucher).
 6. Catégorie *Node | Visuals* : `Mesh` = le mesh choisi en 8.1. `Mesh Scale` : pour le cylindre du moteur
@@ -375,7 +375,7 @@ l'ignore, et l'Output Log l'indique.
 
 ### 8.9 Après la migration de tous les niveaux (étape 4b)
 
-Après l'import, compléter le niveau dans le mode « Board » (départ joueur, sortie… via « Selected Cell »).
+Après l'import, compléter le niveau dans le mode « Board Editor » (départ joueur, sortie… via « Selected Cell »).
 
 Quand toutes les branches sont fusionnées dans `develop` et tous les niveaux migrés : supprimer les propriétés
 `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`, `FBoardLayoutSync::BuildLayoutFromLegacyScene` et la
