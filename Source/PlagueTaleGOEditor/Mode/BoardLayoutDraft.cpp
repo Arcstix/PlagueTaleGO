@@ -3,6 +3,8 @@
 #include "PlagueTaleGO/Level/BoardPlacementSettings.h"
 #include "PlagueTaleGO/Level/Validation/BoardValidator.h"
 
+#define LOCTEXT_NAMESPACE "BoardLayoutDraft"
+
 void UBoardLayoutDraft::ResetFromBoard(ABoard* InBoard)
 {
 	Board = InBoard;
@@ -57,11 +59,44 @@ void UBoardLayoutDraft::Revalidate()
 	Validation = FBoardValidator::Validate(Layout);
 
 	ErrorCells.Reset();
+	WarningCells.Reset();
 	for (const FBoardValidationMessage& Message : Validation.Messages)
 	{
 		if (Message.Severity == EBoardValidationSeverity::Error)
 		{
 			ErrorCells.Append(Message.Cells);
 		}
+		else
+		{
+			WarningCells.Append(Message.Cells);
+		}
 	}
 }
+
+FText UBoardLayoutDraft::GetErrorSummary(int32 MaxLines) const
+{
+	TArray<FString> Lines;
+	int32 ErrorCount = 0;
+	for (const FBoardValidationMessage& Message : Validation.Messages)
+	{
+		if (Message.Severity != EBoardValidationSeverity::Error)
+		{
+			continue;
+		}
+		++ErrorCount;
+		if (Lines.Num() < MaxLines)
+		{
+			Lines.Add(TEXT("• ") + Message.Text.ToString());
+		}
+	}
+
+	FString Result = FString::Join(Lines, TEXT("\n"));
+	if (ErrorCount > MaxLines)
+	{
+		Result += TEXT("\n") + FText::Format(LOCTEXT("MoreErrors", "... and {0} more (full list: panel > Draft > Problems)"),
+			FText::AsNumber(ErrorCount - MaxLines)).ToString();
+	}
+	return FText::FromString(Result);
+}
+
+#undef LOCTEXT_NAMESPACE

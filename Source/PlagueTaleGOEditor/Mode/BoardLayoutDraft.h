@@ -10,7 +10,7 @@ class ABoard;
 class UBoardPlacementSettings;
 
 /**
- * Brouillon du mode « Plateau » : une copie du layout du Board, modifiée par l'outil.
+ * Brouillon du mode « Board » : une copie du layout du Board, modifiée par l'outil.
  * Tant qu'il n'est pas soumis, ni le Board ni la scène ne changent : seul l'aperçu montre le brouillon.
  *
  * - Créé par UBoardEditorMode à l'entrée dans le mode, soumis par UBoardEditorMode::SubmitDraft.
@@ -41,8 +41,12 @@ public:
 
 	const FBoardValidationResult& GetValidation() const { return Validation; }
 
-	// Cases citées par au moins une erreur (mises en évidence dans l'aperçu)
+	// Cases citées par au moins une erreur / un avertissement (cercle rouge / orange dans l'aperçu)
 	const TSet<FIntPoint>& GetErrorCells() const { return ErrorCells; }
+	const TSet<FIntPoint>& GetWarningCells() const { return WarningCells; }
+
+	// Les erreurs en liste à puces (au plus MaxLines, puis « … et N autre(s) ») pour une fenêtre de message
+	FText GetErrorSummary(int32 MaxLines) const;
 
 	// Diffusé après chaque changement du brouillon (l'outil met à jour son panneau)
 	FSimpleMulticastDelegate OnChanged;
@@ -65,4 +69,5 @@ private:
 
 	FBoardValidationResult Validation;
 	TSet<FIntPoint> ErrorCells;
+	TSet<FIntPoint> WarningCells;
 };

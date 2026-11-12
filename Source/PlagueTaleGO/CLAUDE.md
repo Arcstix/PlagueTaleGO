@@ -95,6 +95,8 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 - module éditeur : `UE_LOG(LogBoardEditor, …, TEXT("[BoardEditor] …"))` (`LogPlagueTaleGO` n'est pas exportée).
 - `Error` : niveau mal construit ou situation impossible. `Warning` : anormal mais récupérable. `Log` : événement important (changement d'état, spawn). `Verbose` : détail de debug.
 
+**Textes affichés dans l'éditeur** (Level Editor : panneau, messages de validation, noms et tooltips des propriétés des Data Assets du plateau) : **en anglais uniquement** (`LOCTEXT`, `DisplayName`, `ToolTip`). Pas de traduction française (abandonnée le 12/11/2026). Les logs et les commentaires restent en français.
+
 **Commentaires** : en français. Ils expliquent le *pourquoi* et les mécanismes UE non évidents. Chaque classe a un commentaire `/** */` qui décrit son rôle et ce dont elle est responsable. Dans les `.h`, les membres sont regroupés par sections `// --- Section ---`.
 
 ## Recettes

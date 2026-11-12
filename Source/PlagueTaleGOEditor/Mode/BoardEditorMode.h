@@ -7,20 +7,21 @@
 
 class UBoardLayoutDraft;
 class UBoardEditTool;
+class FBoardEditorInputProcessor;
 class FLevelEditorViewportClient;
 class UInteractiveToolManager;
 class UInteractiveTool;
 
 /**
- * Le mode éditeur « Plateau » : le Level Editor du projet.
+ * Le mode éditeur « Board » : le Level Editor du projet.
  * On l'ouvre depuis le menu des modes de l'éditeur (comme Landscape ou Foliage).
  *
  * Responsabilités :
- * - à l'entrée : copier le layout du Board dans un brouillon (UBoardLayoutDraft) et lancer l'outil « Plateau » ;
+ * - à l'entrée : copier le layout du Board dans un brouillon (UBoardLayoutDraft) et lancer l'outil « Board » ;
  * - soumettre (valider puis écrire dans le Board + régénérer la scène) ou abandonner le brouillon ;
  * - à la sortie (ou au changement de niveau) : demander quoi faire d'un brouillon non soumis ;
  * - caméra : vue de dessus à l'entrée, retour à la vue d'avant à la sortie ;
- * - garder l'outil « Plateau » actif : s'il s'arrête (Échap hors tracé, bouton de la barre d'outils),
+ * - garder l'outil « Board » actif : s'il s'arrête (Échap hors tracé, bouton de la barre d'outils),
  *   il est relancé au tick suivant.
  * Le clic droit n'est pas utilisé par le mode : il reste réservé à la caméra.
  *
@@ -38,7 +39,7 @@ public:
 	// Identifiant unique du mode
 	static const FEditorModeID ModeId;
 
-	// Identifiant de l'outil « Plateau » auprès du gestionnaire d'outils
+	// Identifiant de l'outil « Board » auprès du gestionnaire d'outils
 	static const FString EditToolName;
 
 	UBoardEditorMode();
@@ -62,6 +63,9 @@ public:
 	// Déplace la caméra (sans changer son orientation ni sa distance) pour centrer cette case à l'écran
 	void FocusCell(FIntPoint Coord);
 
+	// Échap (reçu par FBoardEditorInputProcessor) : true si l'outil s'en est servi
+	bool HandleEscape();
+
 	// --- Brouillon ---
 	UBoardLayoutDraft* GetDraft() const { return Draft; }
 
@@ -81,10 +85,10 @@ private:
 	// Si le brouillon a des modifications non soumises : demande Soumettre / Abandonner
 	void AskAboutPendingDraft();
 
-	// L'outil « Plateau » s'il est actif
+	// L'outil « Board » s'il est actif
 	UBoardEditTool* GetEditTool() const;
 
-	// Démarre l'outil « Plateau » (le seul outil du mode)
+	// Démarre l'outil « Board » (le seul outil du mode)
 	void StartEditTool();
 
 	// Viewport perspective à piloter : celui en cours d'utilisation, sinon le premier viewport perspective
@@ -97,6 +101,9 @@ private:
 	TObjectPtr<UBoardLayoutDraft> Draft;
 
 	FDelegateHandle MapLoadHandle;
+
+	// Reçoit Échap avant l'éditeur (voir FBoardEditorInputProcessor)
+	TSharedPtr<FBoardEditorInputProcessor> InputProcessor;
 
 	// L'outil s'est arrêté pendant que le mode est actif : le relancer au prochain tick
 	bool bRestartToolPending = false;

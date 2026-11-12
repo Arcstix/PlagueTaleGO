@@ -16,7 +16,7 @@ class UBoardPlacementSettings;
 class ABoard;
 
 /**
- * Crée l'outil « Plateau » quand le mode le demande.
+ * Crée l'outil « Board » quand le mode le demande.
  * Mécanisme ITF : le gestionnaire d'outils ne crée jamais un outil directement, il passe par son « builder ».
  */
 UCLASS()
@@ -33,9 +33,10 @@ public:
 };
 
 /**
- * Panneau de l'outil « Plateau » (1/3) : pinceau, brouillon, vue.
+ * Panneau de l'outil « Board » (1/3) : pinceau, brouillon, vue.
  * Les propriétés d'outil sont affichées automatiquement par le mode, comme un panneau Details.
- * Les UFUNCTION(CallInEditor) deviennent des boutons. Les commentaires des UPROPERTY sont les tooltips.
+ * Les UFUNCTION(CallInEditor) deviennent des boutons.
+ * Libellés et tooltips affichés : en anglais (DisplayName / ToolTip). Les commentaires restent l'explication pour les programmeurs.
  */
 UCLASS()
 class UBoardEditToolProperties : public UInteractiveToolPropertySet
@@ -45,49 +46,49 @@ class UBoardEditToolProperties : public UInteractiveToolPropertySet
 public:
 	// --- Pinceau ---
 
-	// Type des cases posées ou tracées, et appliqué par Ctrl + clic. Présélectionné : le type coché « Type par défaut ».
-	UPROPERTY(EditAnywhere, Category = "Pinceau", meta = (DisplayName = "Type de case"))
+	// Type des cases posées ou tracées, et appliqué par Ctrl + clic. Présélectionné : le type coché « Is Default Type ».
+	UPROPERTY(EditAnywhere, Category = "Brush", meta = (DisplayName = "Cell Type", ToolTip = "Type of the cells placed or drawn, also applied by Ctrl + click. Preselected: the default cell type."))
 	TObjectPtr<UBoardNodeType> PaintType;
 
 	// Description du type choisi (texte d'aide du Data Asset)
-	UPROPERTY(VisibleAnywhere, Category = "Pinceau", meta = (DisplayName = "Description", MultiLine = true))
+	UPROPERTY(VisibleAnywhere, Category = "Brush", meta = (DisplayName = "Description", MultiLine = true, ToolTip = "Description of the chosen type (help text of the Data Asset)."))
 	FText PaintTypeDescription;
 
 	// Couleur du type choisi dans l'aperçu
-	UPROPERTY(VisibleAnywhere, Category = "Pinceau", meta = (DisplayName = "Couleur dans l'aperçu"))
+	UPROPERTY(VisibleAnywhere, Category = "Brush", meta = (DisplayName = "Preview Color", ToolTip = "Color of the chosen type in the preview."))
 	FLinearColor PaintTypeColor = FLinearColor::White;
 
 	// --- Brouillon ---
 
 	// Développement uniquement : autorise le Submit même si la validation trouve des erreurs.
-	UPROPERTY(EditAnywhere, Category = "Brouillon", meta = (DisplayName = "Ignorer les erreurs (dev)"))
+	UPROPERTY(EditAnywhere, Category = "Draft", meta = (DisplayName = "Ignore Errors (dev)", ToolTip = "Development only: allows Submit even if the validation finds errors."))
 	bool bIgnoreErrors = false;
 
 	// Résumé du brouillon : modifié ou non, nombre de cases et de liens, erreurs
-	UPROPERTY(VisibleAnywhere, Category = "Brouillon", meta = (DisplayName = "État"))
+	UPROPERTY(VisibleAnywhere, Category = "Draft", meta = (DisplayName = "Status", ToolTip = "Draft summary: modified or not, number of cells and links, errors."))
 	FString Status;
 
 	// Problèmes trouvés par la validation. Les erreurs bloquent le Submit, les avertissements informent.
 	// EditFixedSize : pas de boutons + / poubelle (liste en lecture seule).
-	UPROPERTY(VisibleAnywhere, Category = "Brouillon", meta = (DisplayName = "Problèmes", EditFixedSize))
+	UPROPERTY(VisibleAnywhere, Category = "Draft", meta = (DisplayName = "Problems", EditFixedSize, ToolTip = "Problems found by the validation. Errors block Submit, warnings are informative."))
 	TArray<FString> Problems;
 
 	// Valide le brouillon puis l'écrit dans le niveau (un seul Ctrl+Z pour annuler)
-	UFUNCTION(CallInEditor, Category = "Brouillon", meta = (DisplayName = "Soumettre"))
+	UFUNCTION(CallInEditor, Category = "Draft", meta = (DisplayName = "Submit", ToolTip = "Validates the draft then writes it into the level (a single Ctrl+Z undoes it)."))
 	void Submit();
 
 	// Abandonne toutes les modifications non soumises
-	UFUNCTION(CallInEditor, Category = "Brouillon", meta = (DisplayName = "Annuler le brouillon"))
+	UFUNCTION(CallInEditor, Category = "Draft", meta = (DisplayName = "Discard Draft", ToolTip = "Discards all unsubmitted changes."))
 	void Revert();
 
 	// Sélectionne la prochaine case concernée par un problème et centre la caméra dessus
-	UFUNCTION(CallInEditor, Category = "Brouillon", meta = (DisplayName = "Erreur suivante"))
+	UFUNCTION(CallInEditor, Category = "Draft", meta = (DisplayName = "Next Error", ToolTip = "Selects the next cell with a problem and centers the camera on it."))
 	void NextError();
 
 	// --- Vue ---
 
 	// Replace la caméra à la verticale du plateau, cadrée sur toutes les cases
-	UFUNCTION(CallInEditor, Category = "Vue", meta = (DisplayName = "Vue de dessus"))
+	UFUNCTION(CallInEditor, Category = "View", meta = (DisplayName = "Top View", ToolTip = "Moves the camera above the board, framing all the cells."))
 	void FrameBoard();
 
 	// L'outil qui possède ce panneau (pour les boutons)
@@ -95,7 +96,7 @@ public:
 };
 
 /**
- * Panneau de l'outil « Plateau » (2/3) : la case sélectionnée (clic simple sur une case).
+ * Panneau de l'outil « Board » (2/3) : la case sélectionnée (clic simple sur une case).
  * Chaque modification est appliquée au brouillon (avec Ctrl+Z). Les réglages se créent tout seuls
  * selon le type choisi (SettingsClass du Data Asset).
  *
@@ -114,46 +115,46 @@ public:
 	bool bHasSelection = false;
 
 	// Affiché seulement quand aucune case n'est sélectionnée
-	UPROPERTY(VisibleAnywhere, Transient, Category = "Case sélectionnée", meta = (DisplayName = "Sélection", EditCondition = "!bHasSelection", EditConditionHides))
+	UPROPERTY(VisibleAnywhere, Transient, Category = "Selected Cell", meta = (DisplayName = "Selection", ToolTip = "Shown only when no cell is selected.", EditCondition = "!bHasSelection", EditConditionHides))
 	FText NoSelectionHint;
 
 	// Position de la case sur la grille
-	UPROPERTY(VisibleAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Coordonnées", EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(VisibleAnywhere, Category = "Selected Cell", meta = (DisplayName = "Coordinates", ToolTip = "Position of the cell on the grid.", EditCondition = "bHasSelection", EditConditionHides))
 	FIntPoint Coord = FIntPoint::ZeroValue;
 
 	// Type de la case : son visuel et ses comportements
-	UPROPERTY(EditAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Type de case", EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Selected Cell", meta = (DisplayName = "Cell Type", ToolTip = "Type of the cell: its visuals and behaviors.", EditCondition = "bHasSelection", EditConditionHides))
 	TObjectPtr<UBoardNodeType> NodeType;
 
 	// Description du type (texte d'aide du Data Asset)
-	UPROPERTY(VisibleAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Description du type", MultiLine = true, EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(VisibleAnywhere, Category = "Selected Cell", meta = (DisplayName = "Type Description", ToolTip = "Description of the type (help text of the Data Asset).", MultiLine = true, EditCondition = "bHasSelection", EditConditionHides))
 	FText TypeDescription;
 
 	// Réglages propres à cette case (seulement si le type en déclare : SettingsClass)
-	UPROPERTY(EditAnywhere, Instanced, Category = "Case sélectionnée", meta = (DisplayName = "Réglages de la case", EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(EditAnywhere, Instanced, Category = "Selected Cell", meta = (DisplayName = "Cell Settings", ToolTip = "Settings specific to this cell (only if the type declares some: Settings Class).", EditCondition = "bHasSelection", EditConditionHides))
 	TObjectPtr<UBoardPlacementSettings> NodeSettings;
 
 	// Entités créées sur cette case au lancement (départ joueur, ennemis…). « + » pour en ajouter.
-	UPROPERTY(EditAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Entités", EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Selected Cell", meta = (DisplayName = "Entities", ToolTip = "Entities created on this cell at start (player start, enemies...). Use + to add one.", EditCondition = "bHasSelection", EditConditionHides))
 	TArray<FBoardEntityPlacement> Entities;
 
 	// Objets posés sur cette case. « + » pour en ajouter.
-	UPROPERTY(EditAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Objets", EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Selected Cell", meta = (DisplayName = "Items", ToolTip = "Items placed on this cell. Use + to add one.", EditCondition = "bHasSelection", EditConditionHides))
 	TArray<FBoardItemPlacement> Items;
 
 	// Problèmes de validation qui concernent cette case
-	UPROPERTY(VisibleAnywhere, Category = "Case sélectionnée", meta = (DisplayName = "Problèmes de la case", EditFixedSize, EditCondition = "bHasSelection", EditConditionHides))
+	UPROPERTY(VisibleAnywhere, Category = "Selected Cell", meta = (DisplayName = "Cell Problems", ToolTip = "Validation problems that concern this cell.", EditFixedSize, EditCondition = "bHasSelection", EditConditionHides))
 	TArray<FString> CellProblems;
 
 	// Ferme cette section (Échap fait de même)
-	UFUNCTION(CallInEditor, Category = "Case sélectionnée", meta = (DisplayName = "Désélectionner"))
+	UFUNCTION(CallInEditor, Category = "Selected Cell", meta = (DisplayName = "Deselect", ToolTip = "Closes this section (Escape does the same)."))
 	void Deselect();
 
 	TWeakObjectPtr<UBoardEditTool> ParentTool;
 };
 
 /**
- * Panneau de l'outil « Plateau » (3/3) : l'aide, toujours en bas.
+ * Panneau de l'outil « Board » (3/3) : l'aide, toujours en bas.
  */
 UCLASS()
 class UBoardEditToolHelpProperties : public UInteractiveToolPropertySet
@@ -162,13 +163,13 @@ class UBoardEditToolHelpProperties : public UInteractiveToolPropertySet
 
 public:
 	// Liste des gestes de l'outil
-	UPROPERTY(VisibleAnywhere, Category = "Aide", meta = (DisplayName = "Commandes", MultiLine = true))
+	UPROPERTY(VisibleAnywhere, Category = "Help", meta = (DisplayName = "Commands", MultiLine = true, ToolTip = "List of the tool gestures."))
 	FText HelpText;
 };
 
 /**
- * L'outil « Plateau » : tous les gestes du Level Editor dans le viewport.
- * Spécification : CLAUDE.md, § 1 « Gestes de l'outil Plateau ».
+ * L'outil « Board » : tous les gestes du Level Editor dans le viewport.
+ * Spécification : CLAUDE.md, § 1 « Gestes de l'outil Board ».
  *
  * Bouton gauche (UClickDragInputBehavior) : un appui démarre un « tracé » dont la nature dépend des touches :
  * - sans touche : tracer un chemin (crée les cases manquantes et relie chaque case à la précédente) ;
@@ -277,19 +278,19 @@ private:
 
 	// --- Détails de la case sélectionnée ---
 
-	// Recopie la case sélectionnée du brouillon dans la section « Case sélectionnée » (ou la masque).
+	// Recopie la case sélectionnée du brouillon dans la section « Selected Cell » (ou la masque).
 	// bCopyCellData = false : ne met à jour que les problèmes (pendant une édition dans le panneau).
 	void RefreshDetails(bool bCopyCellData = true);
 
 	// Crée / remplace / supprime les objets de réglages pour qu'ils correspondent aux types choisis
 	void FixupDetailsSettings();
 
-	// Recopie la section « Case sélectionnée » dans le brouillon (une étape Ctrl+Z)
+	// Recopie la section « Selected Cell » dans le brouillon (une étape Ctrl+Z)
 	void ApplyDetailsToDraft();
 
 	// --- Affichage ---
 
-	// Le brouillon a changé : met à jour État / Problèmes et la section « Case sélectionnée »
+	// Le brouillon a changé : met à jour Status / Problems et la section « Selected Cell »
 	void HandleDraftChanged();
 
 	// Description et couleur du type du pinceau
@@ -313,13 +314,13 @@ private:
 	TOptional<FIntPoint> HoveredCell;
 	TOptional<FBoardLink> HoveredLink;
 
-	// Case sélectionnée (section « Case sélectionnée » du panneau)
+	// Case sélectionnée (section « Selected Cell » du panneau)
 	TOptional<FIntPoint> SelectedCell;
 
 	// Vrai pendant que les détails sont recopiés dans le brouillon (ne pas les recharger au même moment)
 	bool bApplyingDetails = false;
 
-	// Position dans la liste des cases en erreur (bouton « Erreur suivante »)
+	// Position dans la liste des cases en erreur (bouton « Next Error »)
 	int32 NextErrorIndex = 0;
 
 	bool bShiftDown = false;
@@ -336,6 +337,7 @@ private:
 	bool bStartCellExisted = false;   // la case de départ existait avant le tracé
 	FIntPoint LastStrokeCell = FIntPoint::ZeroValue;
 	TOptional<FBoardLink> StrokeStartLink;   // Shift : lien visé à l'appui (effacé si on relâche sans bouger)
+	TSet<FIntPoint> StrokeTouchedCells;      // Ctrl : cases déjà touchées par le tracé (retour visuel)
 
 	FDelegateHandle DraftChangedHandle;
 

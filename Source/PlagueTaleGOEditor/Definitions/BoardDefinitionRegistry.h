@@ -19,7 +19,7 @@ struct FBoardDefinitionRegistry
 	// Charge les assets trouvés (ils sont petits).
 	static TArray<UBoardDefinition*> GetAll(const UClass* DefinitionClass);
 
-	// Le type de case coché « Type par défaut » (sinon le premier type trouvé, avec un avertissement).
+	// Le type de case coché « Is Default Type » (sinon le premier type trouvé, avec un avertissement).
 	// nullptr s'il n'existe aucun type de case.
 	static UBoardNodeType* GetDefaultNodeType();
 

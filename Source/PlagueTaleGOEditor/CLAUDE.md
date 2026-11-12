@@ -24,20 +24,20 @@ Workflow cible :
         │                                    (cases fantômes, liens, erreurs surlignées)
         ▼
 Validation (règles enfichables) ──► Erreur = Submit refusé
-        │                            (sauf option « Ignorer les erreurs », décochée par défaut)
+        │                            (sauf option « Ignore Errors », décochée par défaut)
         ▼
 SUBMIT ──► ABoard::Layout (source de vérité) ──► génération des acteurs ABoardNode
         (une seule transaction : un Ctrl+Z annule tout le Submit)
 ```
 
-### Gestes de l'outil « Plateau » (spécification validée le 11/11/2026)
+### Gestes de l'outil « Board » (spécification validée le 11/11/2026)
 
 Un **seul outil**, piloté par la souris et des touches de modification. Survoler une case affiche les actions
 possibles (aide contextuelle) ; la section « Aide » du panneau les liste toutes.
 
 | Geste | Case vide | Case existante | Lien | Étape |
 |---|---|---|---|---|
-| Clic gauche | Poser une case du type du pinceau (elle est sélectionnée) | La sélectionner : section « Case sélectionnée » (type, entités, objets, réglages) | — | 2a / 3 |
+| Clic gauche | Poser une case du type du pinceau (elle est sélectionnée) | La sélectionner : section « Selected Cell » (type, entités, objets, réglages) | — | 2a / 3 |
 | Clic gauche + glisser | Tracer un chemin : chaque case traversée devient une case reliée à la précédente | Pareil, en partant de cette case | — | 2b |
 | Ctrl + clic gauche (ou glisser) | — | Appliquer le type du pinceau aux noeuds ciblés | — | 2a (clic) / 2b (glisser) |
 | Shift + clic gauche (sans bouger) | — | Effacer la case et ses liens | Effacer le lien (prioritaire sur la case) | 2a / 2b |
@@ -48,21 +48,25 @@ possibles (aide contextuelle) ; la section « Aide » du panneau les liste toute
 
 Règles du tracé (2b) : passer sur une case existante la relie au chemin et continue (fermer une boucle, relier deux
 cases voisines) ; si la souris saute une case ou passe en diagonale, le chemin est complété en angle droit.
+**Légende de l'aperçu** : cercle = état de la case (vert valide, orange avertissement, rouge erreur) ; point central =
+couleur du type (`Editor Color`) ; flèche = entité (sa direction) ; losange = objet ; croix / trait gris = supprimé au
+Submit ; carré cyan = sélection ; jaune = sous la souris ; pendant Ctrl + glisser, les cases touchées sont encadrées
+de la couleur du type appliqué.
 Visée d'un lien : près du centre d'une case (30 % de `CellSize`) on vise la case ; vers le bord, entre deux cases
 reliées, on vise le lien (surligné en jaune). Shift + clic sans bouger efface la cible visée ; Shift + glisser n'efface que des cases. Un tracé entier (appui → relâchement) = une seule étape Ctrl+Z.
-Le pinceau présélectionne le type coché **« Type par défaut »** (`UBoardNodeType::bIsDefaultType`).
+Le pinceau présélectionne le type coché **« Is Default Type »** (`UBoardNodeType::bIsDefaultType`).
 **Caméra** : à l'entrée dans le mode, le viewport perspective passe à la verticale du plateau, cadré sur toutes les
-cases (+X / Nord en haut de l'écran) ; la vue d'avant est rétablie à la sortie. Bouton « Vue de dessus » pour recadrer.
-Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : question Soumettre / Abandonner.
+cases (+X / Nord en haut de l'écran) ; la vue d'avant est rétablie à la sortie. Bouton « Top View » pour recadrer.
+Quitter le mode (ou ouvrir un autre niveau) avec un brouillon non soumis : question Submit (Yes) / Discard (No).
 
 ## 2. État d'avancement
 
 | Étape | Contenu | Statut |
 |---|---|---|
 | 1 | Modèle de données (layout, définitions, réglages), liens explicites en jeu, validation enfichable, module éditeur, synchronisation scène, migration, commandes console | ✅ Terminé et testé (11/11/2026, commit 2245e2d) |
-| 2a | Mode « Plateau » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
-| 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Vue de dessus » | ✅ Terminé et testé (12/11/2026) |
-| 3 | Sélection d'une case + section « Case sélectionnée » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Erreur suivante » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
+| 2a | Mode « Board » : `UEdMode`, brouillon (Ctrl+Z), aperçu dans le viewport, survol + aide contextuelle, clic (poser / Ctrl appliquer le type / Shift effacer), panneau minimal (pinceau, Soumettre, Annuler, Ignorer les erreurs, problèmes, aide), question à la sortie | ✅ Terminé et testé (11/11/2026) |
+| 2b | Gestes glissés (tracer un chemin relié, Shift + glisser pour effacer, Ctrl + glisser pour peindre le type), Shift + clic sur un lien pour l'effacer, Échap, vue de dessus automatique + bouton « Top View » | ✅ Terminé et testé (12/11/2026) |
+| 3 | Sélection d'une case + section « Selected Cell » (type, réglages, entités avec orientation et réglages, objets, problèmes de la case) ; description et couleur du type du pinceau ; bouton « Next Error » (sélectionne et centre la caméra) ; aperçu des entités (flèches) et objets (losanges) | ✅ Terminé et testé (12/11/2026) |
 | 4a | Verrouillage léger (`ABoardNode` en `NotPlaceable`, position verrouillée à la génération), suppression de l'édition manuelle temporaire du `BP_Board`, guide utilisateur (document partagé) | ✅ Écrit (12/11/2026), à compiler et tester |
 | 4b | Suppression du code de migration (§ 8.9) | Plus tard : quand toutes les branches seront fusionnées dans `develop` et leurs niveaux migrés |
 
@@ -95,6 +99,7 @@ Source/PlagueTaleGOEditor/                 (éditeur uniquement : jamais dans le
                                            caméra, relance de l'outil s'il s'arrête
   Mode/BoardEditorModeToolkit              Panneau du mode (FModeToolkit standard, sans Slate)
   Mode/BoardEditorModeCommands             Boutons de la barre d'outils du mode (TCommands)
+  Mode/BoardEditorInputProcessor.h         Reçoit Échap avant les commandes de l'éditeur (préprocesseur Slate)
   Mode/BoardLayoutDraft                    UBoardLayoutDraft : copie du layout en cours d'édition + validation
   Tools/BoardEditTool                      UBoardEditTool : gestes, survol, sélection, aperçu ; ses 3 jeux de propriétés
                                            = le panneau (pinceau / brouillon / vue, case sélectionnée, aide)
@@ -139,6 +144,8 @@ UBoardSubsystem (graphe = acteurs + Layout.Links)    ABoardGameMode (pions = Lay
    `#if WITH_EDITOR` / `#if WITH_EDITORONLY_DATA`.
 8. **Toute modification de la scène par l'outil passe par une transaction** (`FScopedTransaction` + `Modify()`
    sur chaque objet modifié, y compris le `ULevel` quand on crée/détruit des acteurs).
+9. **Tout texte affiché à l'utilisateur est en anglais** (`LOCTEXT`, `DisplayName`, `ToolTip`) : § 6 « Textes affichés ».
+   Les logs, l'aide des commandes console et les commentaires restent en français.
 
 ## 5. Modèle de données
 
@@ -188,7 +195,7 @@ Convention d'assets proposée : `Content/Data/Board/NodeTypes/DA_Node_<Nom>`, `.
 | `UConnectedGraphRule` | Erreur | Un seul ensemble de cases reliées (pas d'îlot) |
 | `UExitReachableRule` | Avertissement | Une sortie est atteignable depuis le départ (liens + cases bloquées, sans les ennemis) |
 
-Les erreurs bloquent le Submit, sauf si l'option « Ignorer les erreurs » (étape 3, décochée par défaut) est cochée :
+Les erreurs bloquent le Submit, sauf si l'option « Ignore Errors » (étape 3, décochée par défaut) est cochée :
 elle sert au développement (niveau de test incomplet). La validation est aussi relancée au lancement de la
 partie (`UBoardSubsystem::OnWorldBeginPlay`) et ses résultats vont dans le log.
 
@@ -205,7 +212,7 @@ Le visuel vient du type : créer un type dédié, sans comportement, et l'attrib
 1. Matériau : dans `Content/Materials/`, un Material `M_Node` avec un paramètre *Vector Parameter* `Color`
    branché sur *Base Color* ; puis clic droit > *Create Material Instance* > `MI_Node_Start`, régler `Color`.
 2. Dupliquer `DA_Node_Floor` en `DA_Node_Start` : `Display Name`, `Material Overrides` [0] = `MI_Node_Start`, `Behaviors` vide.
-3. Attribuer `DA_Node_Start` à la case : mode « Plateau », sélectionner la case, « Type de case » (ou Ctrl + clic).
+3. Attribuer `DA_Node_Start` à la case : mode « Board », sélectionner la case, « Cell Type » (ou Ctrl + clic).
 Le joueur n'est pas lié à ce type : il apparaît là où l'entité joueur est placée. Si le départ doit
 toujours être coloré automatiquement, en discuter avec les GD (ce serait une règle à coder).
 
@@ -222,26 +229,37 @@ toujours être coloré automatiquement, en discuter avec les GD (ce serait une r
 
 **Ajouter des réglages à un type** (ex. patrouille d'un ennemi)
 1. Créer une sous-classe C++ de `UBoardPlacementSettings` (un fichier, `UCLASS()` suffit : les spécificateurs
-   `EditInlineNew`/`DefaultToInstanced` sont hérités). Chaque réglage : `UPROPERTY(EditAnywhere)` commenté
-   (le commentaire devient le tooltip dans l'outil), avec `ClampMin` si numérique.
+   `EditInlineNew`/`DefaultToInstanced` sont hérités). Chaque réglage : `UPROPERTY(EditAnywhere)` avec un commentaire
+   en français (pour les programmeurs) et `meta = (ToolTip = "...")` en anglais (affiché dans l'outil), `ClampMin` si numérique.
 2. Dans le Data Asset du type, choisir cette classe dans `SettingsClass`.
 3. Côté jeu : surcharger `ABoardPawn::ApplyPlacementSettings` et faire un `Cast` vers la classe de réglages.
    Les réglages arrivent **avant** `BeginPlay`.
-4. Dans le mode « Plateau », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
-   entité ou d'un objet (section « Case sélectionnée »). Les placements déjà soumis les reçoivent à leur prochaine édition ;
+4. Dans le mode « Board », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
+   entité ou d'un objet (section « Selected Cell »). Les placements déjà soumis les reçoivent à leur prochaine édition ;
    en attendant, gérer `Settings == nullptr` (valeurs par défaut).
 
-**Ajouter ou modifier un geste de l'outil « Plateau »**
+**Ajouter ou modifier un geste de l'outil « Board »**
 1. Mettre à jour d'abord le tableau des gestes (§ 1) et le valider avec l'équipe.
 2. Dans `UBoardEditTool` : l'entrée passe par un comportement ITF (`USingleClickInputBehavior`, `UMouseHoverBehavior`…,
    créés dans `Setup`). Toute modification du brouillon passe par `ApplyDraftEdit` (historique Ctrl+Z automatique).
-3. Mettre à jour l'aide : `HelpText` (panneau) et `UpdateHoverMessage` (aide contextuelle).
+3. Mettre à jour l'aide, en anglais : `HelpText` (panneau) et `UpdateHoverMessage` (aide contextuelle).
+
+**Textes affichés (anglais uniquement)**
+L'interface de l'outil est en anglais, quelle que soit la langue de l'éditeur (la traduction française a été abandonnée).
+- `.cpp` : `LOCTEXT("Cle", "English text")` entre `#define LOCTEXT_NAMESPACE "..."` et `#undef LOCTEXT_NAMESPACE`
+  (fin du fichier). Variables : `FText::Format(LOCTEXT("Cle", "{0} cell(s)"), FText::AsNumber(N))`.
+  `LOCTEXT` reste la convention UE pour tout `FText` affiché, même sans traduction (une traduction resterait possible plus tard).
+- Propriétés et boutons des panneaux et des Data Assets : `meta = (DisplayName = "...", ToolTip = "...")` et `Category`
+  en anglais. Le commentaire `//` au-dessus reste en français, pour les programmeurs.
+- Logs (`UE_LOG`), aide des commandes console, commentaires : en français.
 
 **Ajouter une règle de validation**
 1. Créer `Level/Validation/Rules/XxxRule.h/.cpp`, classe `UXxxRule : public UBoardValidationRule` (`UCLASS()`).
 2. Dans le constructeur : `Severity` (Erreur bloque le Submit, Avertissement informe) et `Description`.
 3. Surcharger `Validate` : lire le layout, appeler `Report(OutMessages, Texte, Cases)` pour chaque problème.
    Message pour un LD : quoi, où (`CoordToString`), comment corriger. Passer les cases concernées pour qu'elles soient surlignées.
+   Texte en anglais : `FText::Format(LOCTEXT("Xxx_Message", "... {0} ..."), ...)`, entre `#define LOCTEXT_NAMESPACE "BoardValidation"`
+   et `#undef LOCTEXT_NAMESPACE` (modèle : `IsolatedNodeRule.cpp`).
 4. Rien à enregistrer : `FBoardValidator` trouve toutes les sous-classes. Mettre à jour le tableau du § 5.
 5. Une règle ne doit **pas** répéter le message d'une autre (ex. `UExitReachableRule` se tait s'il n'y a pas
    exactement un départ joueur : `UPlayerStartRule` le signale déjà).
@@ -297,7 +315,7 @@ Dans le Content Browser : `Content/Data/Board/NodeTypes/` et `Content/Data/Board
 3. Nommer l'asset `DA_Node_Floor`, double-cliquer pour l'ouvrir.
 4. Catégorie *Level Editor* : `Display Name` = « Sol », `Description` = « Case normale, traversable »,
    `Editor Color` au choix, `Sort Order` = 0. Laisser `Settings Class` vide.
-   Cocher `Is Default Type` : c'est le type présélectionné dans le pinceau du mode « Plateau ».
+   Cocher `Is Default Type` : c'est le type présélectionné dans le pinceau du mode « Board ».
 5. Catégorie *Node* : `Behaviors` **vide** (c'est ce qui en fait le type « sol » pour la migration),
    `Node Class` = `BoardNode` (valeur par défaut, ne pas toucher).
 6. Catégorie *Node | Visuals* : `Mesh` = le mesh choisi en 8.1. `Mesh Scale` : pour le cylindre du moteur
@@ -355,12 +373,24 @@ l'ignore, et l'Output Log l'indique.
 
 ### 8.9 Après la migration de tous les niveaux (étape 4b)
 
-Après l'import, compléter le niveau dans le mode « Plateau » (départ joueur, sortie… via « Case sélectionnée »).
+Après l'import, compléter le niveau dans le mode « Board » (départ joueur, sortie… via « Selected Cell »).
 
 Quand toutes les branches sont fusionnées dans `develop` et tous les niveaux migrés : supprimer les propriétés
 `_DEPRECATED`, leurs getters `GetLegacy*`/`IsLegacy*`, `FBoardLayoutSync::BuildLayoutFromLegacyScene` et la
 commande `ImportLegacy`. D'ici là, ne pas les supprimer : un niveau d'une autre branche construit à l'ancienne
 ne pourrait plus être converti.
+
+## 8 bis. À améliorer (retours de l'équipe)
+
+> Agent : ajouter ici chaque retour d'utilisation, puis cocher et dater quand il est traité. La liste évolue.
+
+| Date | Retour | Statut |
+|---|---|---|
+| 12/11/2026 | Aperçu peu lisible (cercles blanc / vert / rouge sans légende) : un seul cercle d'état par case (rouge = erreur, orange = avertissement, vert = valide) + point central à la couleur du type | ✅ Écrit (12/11/2026), à tester |
+| 12/11/2026 | Ctrl + glisser : aucun retour visuel | ✅ Écrit (12/11/2026), à tester |
+| 12/11/2026 | Submit refusé : lister les erreurs (5 max) dans la fenêtre au lieu de renvoyer au panneau | ✅ Écrit (12/11/2026), à tester |
+| 12/11/2026 | Échap ne désélectionne pas une case | ✅ Écrit (12/11/2026), à tester |
+| 12/11/2026 | Traduction anglaise selon la langue de l'éditeur | ✅ Remplacé (12/11/2026) : interface **en anglais uniquement** (panneau, messages de validation, noms / tooltips / catégories des Data Assets du plateau). Traduction française abandonnée (procédure trop lourde pour l'équipe) |
 
 ## 9. Journal des décisions
 
@@ -373,22 +403,24 @@ ne pourrait plus être converti.
 | 10/11/2026 | Pas de hauteur (plateau plat) | Confirmé : grille 2D `FIntPoint` suffisante |
 | 10/11/2026 | Visuel d'une case = son type | Cohérence et mise à jour globale |
 | 10/11/2026 | Listes d'entités / d'objets par case | Évolutif ; une règle pourra limiter à 1 si besoin |
-| 10/11/2026 | Erreurs bloquantes : case isolée, 1 départ joueur, ≥ 1 sortie, graphe d'un seul tenant ; sortie atteignable = avertissement ; option « Ignorer les erreurs » décochée par défaut | Choix de l'équipe |
+| 10/11/2026 | Erreurs bloquantes : case isolée, 1 départ joueur, ≥ 1 sortie, graphe d'un seul tenant ; sortie atteignable = avertissement ; option « Ignore Errors » décochée par défaut | Choix de l'équipe |
 | 10/11/2026 | Layout stocké dans `ABoard` (pas de Data Asset de niveau séparé) | Un seul fichier par niveau, pas de référence croisée à maintenir |
 | 10/11/2026 | Comportements de cases par Gameplay Tags | Ajout de comportements sans nouveaux booléens ; les GD peuvent nommer des tags |
 | 11/11/2026 | Un seul outil + gestes / raccourcis (tableau du § 1), avec aide contextuelle au survol | Choix de l'équipe : rapidité ; l'aide compense la mémorisation |
 | 11/11/2026 | Effacer en glissant = Shift + clic gauche ; clic droit maintenu reste la caméra | Ne pas casser la navigation standard du viewport |
-| 11/11/2026 | Nouvelles cases = type du pinceau, présélectionné par « Type par défaut » ; Ctrl + clic applique le type | Aucun type codé en dur, changement de type rapide |
+| 11/11/2026 | Nouvelles cases = type du pinceau, présélectionné par « Is Default Type » ; Ctrl + clic applique le type | Aucun type codé en dur, changement de type rapide |
 | 11/11/2026 | Brouillon non soumis à la sortie du mode : question Soumettre / Abandonner | Ne jamais perdre ni écrire un brouillon sans le dire |
 | 11/11/2026 | Étape 2 découpée en 2a (squelette testable) et 2b (gestes glissés) | Compiler et tester par petits morceaux |
 | 11/11/2026 | Historique du brouillon par `FToolCommandChange` (copie avant / après du layout) | Mécanisme natif de l'ITF ; layouts petits |
-| 12/11/2026 | Détails d'une case = section « Case sélectionnée » du panneau ; entités placées depuis ces détails ; palette = liste déroulante + description ; « Erreur suivante » (sans Slate) | Choix de l'équipe : rapide à livrer, sans code Slate |
+| 12/11/2026 | Détails d'une case = section « Selected Cell » du panneau ; entités placées depuis ces détails ; palette = liste déroulante + description ; « Next Error » (sans Slate) | Choix de l'équipe : rapide à livrer, sans code Slate |
 | 12/11/2026 | Échap : tracé en cours, puis sélection, puis arrêt (et relance) de l'outil | Comportement standard des outils UE (annulations imbriquées) |
 | 12/11/2026 | Verrouillage léger : `NotPlaceable` + position verrouillée ; les cases restent sélectionnables (debug) | Choix de l'équipe : sûr sans gêner le débogage |
 | 12/11/2026 | Code de migration conservé jusqu'à la fusion de toutes les branches ; édition manuelle du `BP_Board` supprimée | D'autres branches peuvent contenir des niveaux à l'ancien format |
 | 12/11/2026 | Guide utilisateur = document partagé (Claude Docs), séparé de ce CLAUDE.md | Choix de l'équipe : lisible et commentable par les LD / GA sans le dépôt |
 | 11/11/2026 | Vue de dessus en perspective à l'entrée du mode, vue d'avant rétablie à la sortie (proposition de l'équipe) | Vue d'ensemble du plateau sans perdre l'éclairage ni la navigation habituelle |
 | 11/11/2026 | Aucun geste au clic droit (réservé à la caméra) ; effacer un lien = Shift + clic sans bouger | Décision d'équipe : éviter toute confusion. Remplace le « clic droit simple » écrit puis retiré le même jour |
+| 12/11/2026 | Interface de l'outil en anglais uniquement (panneau, messages de validation, métadonnées des Data Assets du plateau) ; pas de traduction française | Choix de l'équipe : la localisation native UE (Localization Dashboard, `.po`) était trop lourde à maintenir. Les textes restent en `LOCTEXT` : une traduction reste possible plus tard sans toucher au code |
+| 12/11/2026 | Logs, aide des commandes console et commentaires restent en français | Destinés aux programmeurs de l'équipe |
 
 ## 10. Pièges UE rencontrés
 
@@ -406,6 +438,10 @@ ne pourrait plus être converti.
   Piège aggravé par l'*adaptive unity build* : selon les fichiers regroupés, l'erreur peut apparaître ou disparaître.
 - **Boutons sans Slate** : une `UFUNCTION(CallInEditor)` sur un `UInteractiveToolPropertySet` devient un bouton dans
   le panneau du mode. Quand le code modifie une propriété affichée, appeler `NotifyOfPropertyChangeByTool` pour rafraîchir.
+- **Échap n'atteint pas l'outil** : dans le viewport, l'éditeur traite Échap avec ses propres commandes (« tout
+  désélectionner »…) avant le mode. `IInteractiveToolNestedAcceptCancelAPI` ne suffit donc pas : un préprocesseur
+  d'entrées Slate (`FBoardEditorInputProcessor`, enregistré dans `Enter`, retiré dans `Exit`) reçoit la touche en premier
+  et ne la garde que si l'outil s'en sert, et seulement si le viewport a le focus.
 - **`UEdMode` n'a pas d'`InputKey` en 5.8** (API des anciens modes) : les entrées passent par l'ITF. Échap pendant un
   tracé : l'outil implémente `IInteractiveToolNestedAcceptCancelAPI` (l'éditeur lui propose d'abord Échap). Hors tracé,
   Échap arrête l'outil : `UBoardEditorMode::OnToolEnded` + `ModeTick` le relancent, et `SaveProperties` /
@@ -414,7 +450,7 @@ ne pourrait plus être converti.
   de l'outil. `SetToolPropertySourceEnabled` ne fait donc ni apparaître ni disparaître une section. Pour une section
   conditionnelle : la garder toujours présente et cacher ses lignes avec `EditCondition` + `EditConditionHides`
   (cf. `UBoardCellDetailsProperties::bHasSelection`).
-- **Le panneau édite des copies** : la section « Case sélectionnée » reçoit des copies (réglages dupliqués) de la
+- **Le panneau édite des copies** : la section « Selected Cell » reçoit des copies (réglages dupliqués) de la
   case ; chaque modification est recopiée dans le brouillon par `ApplyDraftEdit` (Ctrl+Z). Ne jamais lui donner les
   objets du brouillon directement (modification hors historique). Pendant cette recopie (`bApplyingDetails`), on ne
   recharge pas le panneau depuis le brouillon, pour ne pas perturber l'édition en cours.
@@ -422,7 +458,11 @@ ne pourrait plus être converti.
 - **Dans le mode, clic gauche + glisser ne déplace plus la caméra** (il trace) : naviguer au clic droit maintenu + ZQSD,
   molette, ou clic du milieu.
 - **Limite connue (2a)** : après un Submit, Ctrl+Z annule le Submit dans le niveau mais le brouillon ne suit pas.
-  Cliquer « Annuler le brouillon » pour repartir du niveau.
+  Cliquer « Discard Draft » pour repartir du niveau.
+- **`LOCTEXT_NAMESPACE` : un `#undef` à la fin de chaque `.cpp`**. Avec l'*unity build*, plusieurs `.cpp` sont
+  compilés ensemble : un `#define` oublié sans `#undef` donne une erreur de redéfinition (ou un mauvais espace de noms).
+- **Les tooltips viennent des commentaires** quand `ToolTip` n'est pas renseigné : le commentaire français s'afficherait
+  dans l'éditeur. Pour une propriété visible, toujours un `ToolTip` explicite en anglais.
 - **`LogPlagueTaleGO` n'est pas exportée** : le module éditeur utilise sa propre catégorie `LogBoardEditor`.
 - **Ajouter un module** (`.uproject` + `*.Target.cs` + `*.Build.cs`) : régénérer les fichiers projet
   (clic droit sur `PlagueTaleGO.uproject` > Generate Visual Studio project files).

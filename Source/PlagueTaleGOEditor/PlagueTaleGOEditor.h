@@ -10,7 +10,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogBoardEditor, Log, All);
 /**
  * Module éditeur du projet.
  * - Au démarrage : active la resynchronisation automatique de la scène (FBoardAutoSync)
- *   et enregistre les boutons du mode « Plateau » (FBoardEditorModeCommands).
+ *   et enregistre les boutons du mode « Board » (FBoardEditorModeCommands).
  * - Les commandes console s'enregistrent toutes seules (FAutoConsoleCommand),
  *   et le futur mode éditeur (UEdMode) sera découvert automatiquement par l'éditeur.
  */

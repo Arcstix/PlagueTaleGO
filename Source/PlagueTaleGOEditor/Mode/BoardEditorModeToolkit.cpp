@@ -1,5 +1,7 @@
 ﻿#include "BoardEditorModeToolkit.h"
 
+#define LOCTEXT_NAMESPACE "BoardEditorModeToolkit"
+
 void FBoardEditorModeToolkit::Init(const TSharedPtr<IToolkitHost>& InitToolkitHost, TWeakObjectPtr<UEdMode> InOwningMode)
 {
 	FModeToolkit::Init(InitToolkitHost, InOwningMode);
@@ -18,5 +20,7 @@ FName FBoardEditorModeToolkit::GetToolkitFName() const
 
 FText FBoardEditorModeToolkit::GetBaseToolkitName() const
 {
-	return INVTEXT("Plateau");
+	return LOCTEXT("ToolkitName", "Board");
 }
+
+#undef LOCTEXT_NAMESPACE

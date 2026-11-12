@@ -8,10 +8,10 @@ UENUM(BlueprintType)
 enum class EBoardValidationSeverity : uint8
 {
 	// Information : le Submit reste possible
-	Warning	UMETA(DisplayName = "Avertissement"),
+	Warning	UMETA(DisplayName = "Warning"),
 
-	// Bloque le Submit (sauf si l'option « Ignorer les erreurs » du Level Editor est cochée)
-	Error	UMETA(DisplayName = "Erreur")
+	// Bloque le Submit (sauf si l'option « Ignore Errors » du Level Editor est cochée)
+	Error	UMETA(DisplayName = "Error")
 };
 
 // Un problème détecté par une règle de validation

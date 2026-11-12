@@ -3,10 +3,13 @@
 #include "PlagueTaleGO/Board/BoardTags.h"
 #include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
 
+// Textes affichés à l'utilisateur : en anglais, en LOCTEXT (convention UE pour tout FText affiché)
+#define LOCTEXT_NAMESPACE "BoardValidation"
+
 UExitRule::UExitRule()
 {
 	Severity = EBoardValidationSeverity::Error;
-	Description = INVTEXT("Au moins une case de sortie (comportement Board.Node.Exit).");
+	Description = LOCTEXT("Exit_Desc", "At least one exit cell (Board.Node.Exit behavior).");
 }
 
 void UExitRule::Validate(const FBoardLayout& Layout, TArray<FBoardValidationMessage>& OutMessages) const
@@ -19,5 +22,7 @@ void UExitRule::Validate(const FBoardLayout& Layout, TArray<FBoardValidationMess
 		}
 	}
 
-	Report(OutMessages, INVTEXT("Aucune case de sortie : utiliser un type de case avec le comportement Board.Node.Exit."));
+	Report(OutMessages, LOCTEXT("Exit_None", "No exit cell: use a cell type with the Board.Node.Exit behavior."));
 }
+
+#undef LOCTEXT_NAMESPACE

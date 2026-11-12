@@ -1,10 +1,13 @@
 ﻿#include "ConnectedGraphRule.h"
 #include "PlagueTaleGO/Level/BoardLayout.h"
 
+// Textes affichés à l'utilisateur : en anglais, en LOCTEXT (convention UE pour tout FText affiché)
+#define LOCTEXT_NAMESPACE "BoardValidation"
+
 UConnectedGraphRule::UConnectedGraphRule()
 {
 	Severity = EBoardValidationSeverity::Error;
-	Description = INVTEXT("Toutes les cases sont reliées entre elles (pas d'îlot isolé).");
+	Description = LOCTEXT("ConnectedGraph_Desc", "All cells are connected to each other (no isolated island).");
 }
 
 void UConnectedGraphRule::Validate(const FBoardLayout& Layout, TArray<FBoardValidationMessage>& OutMessages) const
@@ -30,7 +33,8 @@ void UConnectedGraphRule::Validate(const FBoardLayout& Layout, TArray<FBoardVali
 		}
 	}
 
-	Report(OutMessages, FText::FromString(FString::Printf(
-		TEXT("Le plateau est coupé en plusieurs morceaux : %d case(s) ne sont pas reliées au reste (%s)."),
-		Unreachable.Num(), *CoordsToString(Unreachable))), Unreachable);
+	Report(OutMessages, FText::Format(LOCTEXT("ConnectedGraph_Message", "The board is split into several parts: {0} cell(s) are not connected to the rest ({1})."),
+		FText::AsNumber(Unreachable.Num()), FText::FromString(CoordsToString(Unreachable))), Unreachable);
 }
+
+#undef LOCTEXT_NAMESPACE

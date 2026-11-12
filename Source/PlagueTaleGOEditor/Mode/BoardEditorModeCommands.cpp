@@ -6,7 +6,7 @@
 FBoardEditorModeCommands::FBoardEditorModeCommands()
 	: TCommands<FBoardEditorModeCommands>(
 		TEXT("BoardEditorMode"),
-		LOCTEXT("ContextDescription", "Level Editor (Plateau)"),
+		LOCTEXT("ContextDescription", "Level Editor (Board)"),
 		NAME_None,
 		FAppStyle::GetAppStyleSetName())
 {
@@ -17,7 +17,7 @@ void FBoardEditorModeCommands::RegisterCommands()
 	TArray<TSharedPtr<FUICommandInfo>>& ToolCommands = Commands.FindOrAdd(NAME_Default);
 
 	// UI_COMMAND crée la commande : identifiant, libellé, tooltip, type de bouton, raccourci (aucun)
-	UI_COMMAND(EditTool, "Plateau", "Éditer le plateau : poser, peindre et effacer des cases. Survoler une case affiche les actions possibles.",
+	UI_COMMAND(EditTool, "Board", "Edit the board: place, paint and erase cells. Hovering a cell shows the available actions.",
 		EUserInterfaceActionType::ToggleButton, FInputChord());
 	ToolCommands.Add(EditTool);
 }

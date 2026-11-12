@@ -4,10 +4,13 @@
 #include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
 #include "PlagueTaleGO/Level/Definitions/BoardEntityType.h"
 
+// Textes affichés à l'utilisateur : en anglais, en LOCTEXT (convention UE pour tout FText affiché)
+#define LOCTEXT_NAMESPACE "BoardValidation"
+
 UExitReachableRule::UExitReachableRule()
 {
 	Severity = EBoardValidationSeverity::Warning;
-	Description = INVTEXT("Une sortie est atteignable depuis le départ joueur (sans tenir compte des ennemis).");
+	Description = LOCTEXT("ExitReachable_Desc", "An exit can be reached from the player start (enemies are not taken into account).");
 }
 
 void UExitReachableRule::Validate(const FBoardLayout& Layout, TArray<FBoardValidationMessage>& OutMessages) const
@@ -58,7 +61,8 @@ void UExitReachableRule::Validate(const FBoardLayout& Layout, TArray<FBoardValid
 		}
 	}
 
-	Report(OutMessages, FText::FromString(FString::Printf(
-		TEXT("Aucune sortie n'est atteignable depuis le départ joueur %s (liens manquants ou cases bloquées)."),
-		*CoordToString(PlayerCells[0]))), PlayerCells);
+	Report(OutMessages, FText::Format(LOCTEXT("ExitReachable_Message", "No exit can be reached from the player start {0} (missing links or blocked cells)."),
+		FText::FromString(CoordToString(PlayerCells[0]))), PlayerCells);
 }
+
+#undef LOCTEXT_NAMESPACE

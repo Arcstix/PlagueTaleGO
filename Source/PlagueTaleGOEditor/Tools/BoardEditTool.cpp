@@ -16,6 +16,9 @@
 #include "SceneManagement.h"                  // FPrimitiveDrawInterface, DrawCircle
 #include "Misc/MessageDialog.h"
 
+// Textes affichés à l'utilisateur : en anglais, en LOCTEXT (convention UE pour tout FText affiché)
+#define LOCTEXT_NAMESPACE "BoardEditTool"
+
 namespace
 {
 	// Hauteur de l'aperçu au-dessus du plan du Board (cm), pour ne pas disparaître dans les meshes
@@ -31,16 +34,22 @@ namespace
 	// on ignore le déplacement au lieu de créer une longue ligne de cases.
 	constexpr int32 MaxStrokeJump = 32;
 
+	// Couleurs de l'aperçu (légende reprise dans l'aide du panneau)
+	const FLinearColor ValidColor(0.2f, 0.9f, 0.3f);          // vert : case valide
+	const FLinearColor WarningColor(1.f, 0.55f, 0.f);         // orange : avertissement
+	const FLinearColor ErrorColor(1.f, 0.1f, 0.1f);           // rouge : erreur (bloque le Submit)
+	const FLinearColor RemovedColor(0.45f, 0.45f, 0.45f);     // gris : supprimé au Submit
 	const FLinearColor HoverColor(1.f, 0.85f, 0.f);           // jaune : case ou lien visé
 	const FLinearColor SelectionColor(0.f, 0.9f, 1.f);        // cyan : case sélectionnée
-	const FLinearColor ErrorColor(1.f, 0.1f, 0.1f);           // rouge : erreur, suppression
-	const FLinearColor NewColor(0.2f, 1.f, 0.3f);             // vert : ajout pas encore soumis
-	const FLinearColor LinkColor(0.9f, 0.9f, 0.9f);           // blanc : lien existant
+	const FLinearColor LinkColor(0.9f, 0.9f, 0.9f);           // blanc : lien
 	const FLinearColor MissingTypeColor(1.f, 0.f, 1.f);       // magenta : type manquant
+
+	// Taille (en pixels à l'écran) du point central à la couleur du type
+	constexpr float TypeDotSize = 14.f;
 
 	FText NodeTypeLabel(const UBoardNodeType* Type)
 	{
-		return Type ? Type->GetDisplayText() : INVTEXT("(aucun type choisi)");
+		return Type ? Type->GetDisplayText() : LOCTEXT("NoTypeChosen", "(no type chosen)");
 	}
 
 	FText CoordText(FIntPoint Coord)
@@ -195,24 +204,28 @@ void UBoardEditTool::Setup()
 	// Panneau 2/3 : case sélectionnée (lignes cachées tant qu'aucune case n'est sélectionnée)
 	Details = NewObject<UBoardCellDetailsProperties>(this);
 	Details->ParentTool = this;
-	Details->NoSelectionHint = INVTEXT("Aucune case sélectionnée : cliquer une case du plateau.");
+	Details->NoSelectionHint = LOCTEXT("NoSelectionHint", "No cell selected: click a cell of the board.");
 	AddToolPropertySource(Details);
 
 	// Panneau 3/3 : aide
 	Help = NewObject<UBoardEditToolHelpProperties>(this);
-	Help->HelpText = INVTEXT(
-		"Clic gauche sur une case vide : poser une case du type choisi (elle est sélectionnée).\n"
-		"Clic gauche sur une case : la sélectionner (section « Case sélectionnée » : type, entités, objets).\n"
-		"Clic gauche + glisser : tracer un chemin (crée les cases et les relie ; passer sur une case existante la relie).\n"
-		"Ctrl + clic gauche (ou glisser) : appliquer le type choisi aux cases.\n"
-		"Shift + clic gauche sur un lien ou une case : l'effacer (une case part avec ses liens).\n"
-		"Shift + clic gauche + glisser : effacer les cases survolées et leurs liens.\n"
-		"Échap : annuler le tracé en cours, sinon désélectionner.\n"
-		"Ctrl+Z / Ctrl+Y : annuler / rétablir dans le brouillon.\n"
-		"Clic droit maintenu + ZQSD : naviguer (caméra habituelle).\n"
+	Help->HelpText = LOCTEXT("HelpText",
+		"Left click on an empty cell: place a cell of the chosen type (it gets selected).\n"
+		"Left click on a cell: select it (Selected Cell section: type, entities, items).\n"
+		"Left click + drag: draw a path (creates the cells and links them; passing over an existing cell links it).\n"
+		"Ctrl + left click (or drag): apply the chosen type to the cells.\n"
+		"Shift + left click on a link or a cell: erase it (a cell goes with its links).\n"
+		"Shift + left click + drag: erase the hovered cells and their links.\n"
+		"Escape: cancel the current stroke, otherwise deselect.\n"
+		"Ctrl+Z / Ctrl+Y: undo / redo in the draft.\n"
+		"Hold right click + ZQSD (WASD on QWERTY): navigate (usual camera).\n"
 		"\n"
-		"Départ joueur, ennemis : sélectionner la case, puis « + » dans Entités.\n"
-		"Rien n'est modifié dans le niveau avant « Soumettre ».");
+		"Player start, enemies: select the cell, then + in Entities.\n"
+		"\n"
+		"Preview: green circle = valid cell, orange = warning, red = error (blocks Submit).\n"
+		"Center dot = color of the cell type. Arrow = entity (its direction), diamond = item.\n"
+		"Grey cross or line = removed on Submit. Cyan square = selection, yellow = under the mouse.\n"
+		"Nothing is changed in the level before Submit.");
 	AddToolPropertySource(Help);
 
 	if (UBoardLayoutDraft* Draft = GetDraft())
@@ -257,7 +270,7 @@ ABoard* UBoardEditTool::GetBoard() const
 
 void UBoardEditTool::OnPropertyModified(UObject* PropertySet, FProperty* Property)
 {
-	// Modification dans « Case sélectionnée » : l'appliquer au brouillon
+	// Modification dans « Selected Cell » : l'appliquer au brouillon
 	if (PropertySet == Details)
 	{
 		ApplyDetailsToDraft();
@@ -408,7 +421,7 @@ void UBoardEditTool::OnClickPress(const FInputDeviceRay& PressPos)
 	// Sans type de pinceau, on peut encore sélectionner une case existante, mais pas en créer
 	if (Kind != EStrokeKind::Erase && !(Properties && Properties->PaintType) && !(Kind == EStrokeKind::Paint && bCellExists))
 	{
-		GetToolManager()->DisplayMessage(INVTEXT("Choisir un type de case dans le panneau (Pinceau > Type de case)."), EToolMessageLevel::UserWarning);
+		GetToolManager()->DisplayMessage(LOCTEXT("ChooseType", "Choose a cell type in the panel (Brush > Cell Type)."), EToolMessageLevel::UserWarning);
 		return;
 	}
 
@@ -533,14 +546,14 @@ void UBoardEditTool::OnClickRelease(const FInputDeviceRay& ReleasePos)
 		switch (Kind)
 		{
 		case EStrokeKind::Erase:
-			Description = !bWasClick ? INVTEXT("Plateau : effacer des cases")
-				: (StrokeStartLink.IsSet() ? INVTEXT("Plateau : effacer un lien") : INVTEXT("Plateau : effacer une case"));
+			Description = !bWasClick ? LOCTEXT("Tx_EraseCells", "Board: erase cells")
+				: (StrokeStartLink.IsSet() ? LOCTEXT("Tx_EraseLink", "Board: erase a link") : LOCTEXT("Tx_EraseCell", "Board: erase a cell"));
 			break;
 		case EStrokeKind::ApplyType:
-			Description = INVTEXT("Plateau : appliquer un type");
+			Description = LOCTEXT("Tx_ApplyType", "Board: apply a type");
 			break;
 		default:
-			Description = !bWasClick ? INVTEXT("Plateau : tracer un chemin") : INVTEXT("Plateau : poser une case");
+			Description = !bWasClick ? LOCTEXT("Tx_DrawPath", "Board: draw a path") : LOCTEXT("Tx_PlaceCell", "Board: place a cell");
 			break;
 		}
 		GetToolManager()->EmitObjectChange(Draft, MakeUnique<FBoardDraftChange>(StrokeStartLayout, StrokeLayout, Description.ToString()), Description);
@@ -597,7 +610,7 @@ void UBoardEditTool::CancelStroke()
 
 	// Les déplacements suivants sont ignorés jusqu'au relâchement du bouton
 	bStrokeCancelled = true;
-	GetToolManager()->DisplayMessage(INVTEXT("Tracé annulé."), EToolMessageLevel::UserNotification);
+	GetToolManager()->DisplayMessage(LOCTEXT("StrokeCancelled", "Stroke cancelled."), EToolMessageLevel::UserNotification);
 }
 
 bool UBoardEditTool::StrokeVisit(FIntPoint Cell)
@@ -620,6 +633,7 @@ bool UBoardEditTool::StrokeVisit(FIntPoint Cell)
 	case EStrokeKind::ApplyType:
 		if (FBoardCell* Target = StrokeLayout.FindCell(Cell))
 		{
+			StrokeTouchedCells.Add(Cell);   // retour visuel, même si la case avait déjà ce type
 			if (PaintType && Target->NodeType != PaintType)
 			{
 				Target->NodeType = PaintType;
@@ -678,6 +692,7 @@ void UBoardEditTool::ResetStroke()
 	bStrokeCancelled = false;
 	bStartCellExisted = false;
 	StrokeStartLink.Reset();
+	StrokeTouchedCells.Reset();
 }
 
 // =====================================================================================
@@ -743,8 +758,10 @@ void UBoardEditTool::RefreshDetails(bool bCopyCellData)
 	{
 		if (Message.Cells.Contains(Cell->Coord))
 		{
-			const TCHAR* Prefix = Message.Severity == EBoardValidationSeverity::Error ? TEXT("Erreur : ") : TEXT("Avertissement : ");
-			Details->CellProblems.Add(Prefix + Message.Text.ToString());
+			const FText Line = Message.Severity == EBoardValidationSeverity::Error
+				? FText::Format(LOCTEXT("ProblemLine_Error", "Error: {0}"), Message.Text)
+				: FText::Format(LOCTEXT("ProblemLine_Warning", "Warning: {0}"), Message.Text);
+			Details->CellProblems.Add(Line.ToString());
 		}
 	}
 
@@ -798,7 +815,7 @@ void UBoardEditTool::ApplyDetailsToDraft()
 		TGuardValue<bool> Guard(bApplyingDetails, true);
 
 		const FIntPoint Coord = SelectedCell.GetValue();
-		ApplyDraftEdit(INVTEXT("Plateau : modifier une case"), [this, Coord](FBoardLayout& Layout)
+		ApplyDraftEdit(LOCTEXT("Tx_EditCell", "Board: edit a cell"), [this, Coord](FBoardLayout& Layout)
 		{
 			FBoardCell* Cell = Layout.FindCell(Coord);
 			UBoardLayoutDraft* Draft = GetDraft();
@@ -896,21 +913,21 @@ void UBoardEditTool::UpdateHoverMessage()
 	FText Message;
 	if (!Draft || !HoveredCell.IsSet())
 	{
-		Message = INVTEXT("Survoler le plateau pour voir les actions possibles. Rien n'est modifié avant « Soumettre ».");
+		Message = LOCTEXT("HoverNothing", "Hover the board to see the available actions. Nothing is changed before Submit.");
 	}
 	else if (HoveredLink.IsSet())
 	{
-		Message = FText::Format(INVTEXT("Lien {0} – {1} — Shift + clic : effacer le lien"),
+		Message = FText::Format(LOCTEXT("HoverLink", "Link {0} – {1} — Shift + click: erase the link"),
 			CoordText(HoveredLink->A), CoordText(HoveredLink->B));
 	}
 	else if (const FBoardCell* Cell = Draft->GetLayout().FindCell(HoveredCell.GetValue()))
 	{
-		Message = FText::Format(INVTEXT("Case {0} « {1} » — Clic : sélectionner · Glisser : tracer depuis cette case · Ctrl + clic : appliquer « {2} » · Shift + clic : effacer"),
+		Message = FText::Format(LOCTEXT("HoverCell", "Cell {0} \"{1}\" — Click: select · Drag: draw from this cell · Ctrl + click: apply \"{2}\" · Shift + click: erase"),
 			CoordText(Cell->Coord), NodeTypeLabel(Cell->NodeType), PaintName);
 	}
 	else
 	{
-		Message = FText::Format(INVTEXT("Case vide {0} — Clic : poser « {1} » · Glisser : tracer un chemin"),
+		Message = FText::Format(LOCTEXT("HoverEmpty", "Empty cell {0} — Click: place \"{1}\" · Drag: draw a path"),
 			CoordText(HoveredCell.GetValue()), PaintName);
 	}
 
@@ -928,7 +945,7 @@ void UBoardEditTool::UpdatePaintTypeInfo()
 		return;
 	}
 	const UBoardNodeType* Type = Properties->PaintType;
-	Properties->PaintTypeDescription = Type ? Type->Description : INVTEXT("Aucun type choisi : impossible de poser des cases.");
+	Properties->PaintTypeDescription = Type ? Type->Description : LOCTEXT("NoTypeDescription", "No type chosen: cells cannot be placed.");
 	Properties->PaintTypeColor = Type ? Type->EditorColor : MissingTypeColor;
 	NotifyOfPropertyChangeByTool(Properties);
 }
@@ -944,15 +961,18 @@ void UBoardEditTool::HandleDraftChanged()
 	const FBoardLayout& Layout = Draft->GetLayout();
 	const FBoardValidationResult& Validation = Draft->GetValidation();
 
-	Properties->Status = FString::Printf(TEXT("%s — %d case(s), %d lien(s) — %d erreur(s), %d avertissement(s)"),
-		Draft->IsDirty() ? TEXT("Modifié, non soumis") : TEXT("À jour"),
-		Layout.Cells.Num(), Layout.Links.Num(), Validation.CountErrors(), Validation.CountWarnings());
+	Properties->Status = FText::Format(LOCTEXT("DraftStatus", "{0} — {1} cell(s), {2} link(s) — {3} error(s), {4} warning(s)"),
+		Draft->IsDirty() ? LOCTEXT("DraftModified", "Modified, not submitted") : LOCTEXT("DraftUpToDate", "Up to date"),
+		FText::AsNumber(Layout.Cells.Num()), FText::AsNumber(Layout.Links.Num()),
+		FText::AsNumber(Validation.CountErrors()), FText::AsNumber(Validation.CountWarnings())).ToString();
 
 	Properties->Problems.Reset();
 	for (const FBoardValidationMessage& Message : Validation.Messages)
 	{
-		const TCHAR* Prefix = Message.Severity == EBoardValidationSeverity::Error ? TEXT("Erreur : ") : TEXT("Avertissement : ");
-		Properties->Problems.Add(Prefix + Message.Text.ToString());
+		const FText Line = Message.Severity == EBoardValidationSeverity::Error
+			? FText::Format(LOCTEXT("ProblemLine_Error", "Error: {0}"), Message.Text)
+			: FText::Format(LOCTEXT("ProblemLine_Warning", "Warning: {0}"), Message.Text);
+		Properties->Problems.Add(Line.ToString());
 	}
 
 	// Le panneau ne se rafraîchit pas tout seul quand le code modifie des propriétés : on le prévient
@@ -977,13 +997,13 @@ void UBoardEditTool::RequestSubmit()
 	const bool bIgnoreErrors = Properties && Properties->bIgnoreErrors;
 	if (Mode->SubmitDraft(bIgnoreErrors))
 	{
-		GetToolManager()->DisplayMessage(INVTEXT("Brouillon soumis : le niveau est à jour (sauvegarder le niveau pour le conserver)."), EToolMessageLevel::UserNotification);
+		GetToolManager()->DisplayMessage(LOCTEXT("Submitted", "Draft submitted: the level is up to date (save the level to keep it)."), EToolMessageLevel::UserNotification);
 		return;
 	}
 
 	FMessageDialog::Open(EAppMsgType::Ok, FText::Format(
-		INVTEXT("Submit refusé : le brouillon contient {0} erreur(s).\n\nVoir la liste « Problèmes » du panneau (bouton « Erreur suivante »), ou cocher « Ignorer les erreurs (dev) »."),
-		FText::AsNumber(Draft->GetValidation().CountErrors())));
+		LOCTEXT("SubmitRefused", "Submit refused: the draft contains {0} error(s):\n\n{1}\n\nUse the \"Next Error\" button to go to the affected cells."),
+		FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary(5)));
 }
 
 void UBoardEditTool::RequestRevert()
@@ -995,7 +1015,7 @@ void UBoardEditTool::RequestRevert()
 	}
 
 	const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::YesNo,
-		INVTEXT("Abandonner toutes les modifications non soumises du brouillon ?"));
+		LOCTEXT("ConfirmRevert", "Discard all unsubmitted changes of the draft?"));
 	if (Answer == EAppReturnType::Yes)
 	{
 		Mode->RevertDraft();
@@ -1019,7 +1039,7 @@ void UBoardEditTool::RequestNextError()
 	}
 
 	// Une entrée par (case, message) : erreurs d'abord, puis avertissements. Les messages sans case
-	// (ex. « aucune sortie ») ne peuvent pas être montrés sur le plateau : ils restent dans « Problèmes ».
+	// (ex. « aucune sortie ») ne peuvent pas être montrés sur le plateau : ils restent dans « Problems ».
 	struct FProblemSpot
 	{
 		FIntPoint Coord;
@@ -1044,7 +1064,7 @@ void UBoardEditTool::RequestNextError()
 
 	if (Spots.Num() == 0)
 	{
-		GetToolManager()->DisplayMessage(INVTEXT("Aucun problème lié à une case (voir aussi la liste « Problèmes »)."), EToolMessageLevel::UserNotification);
+		GetToolManager()->DisplayMessage(LOCTEXT("NoCellProblem", "No problem tied to a cell (see also the \"Problems\" list)."), EToolMessageLevel::UserNotification);
 		return;
 	}
 
@@ -1053,8 +1073,9 @@ void UBoardEditTool::RequestNextError()
 
 	SelectCell(Spot.Coord);
 	Mode->FocusCell(Spot.Coord);
-	GetToolManager()->DisplayMessage(FText::Format(INVTEXT("{0} {1} : {2}"),
-		Spot.bIsError ? INVTEXT("Erreur") : INVTEXT("Avertissement"), CoordText(Spot.Coord), Spot.Text),
+	GetToolManager()->DisplayMessage(FText::Format(
+		Spot.bIsError ? LOCTEXT("SpotError", "Error {0}: {1}") : LOCTEXT("SpotWarning", "Warning {0}: {1}"),
+		CoordText(Spot.Coord), Spot.Text),
 		EToolMessageLevel::UserWarning);
 }
 
@@ -1072,6 +1093,9 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		return;
 	}
 
+	// Légende (aussi dans l'aide du panneau) :
+	// cercle = état de la case (vert valide, orange avertissement, rouge erreur) ; point = couleur du type ;
+	// croix / trait gris = supprimé au Submit ; carré cyan = sélection ; jaune = sous la souris.
 	const FBoardLayout& Layout = Draft->GetLayout();     // ce qu'on édite
 	const FBoardLayout& Current = Board->GetLayout();    // ce qui est dans le niveau
 	const float Size = Board->CellSize;
@@ -1082,39 +1106,34 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		return Board->GridToWorld(Coord) + Lift;
 	};
 
-	// 1. Liens du brouillon : jaune si visé, vert si ajouté (pas encore soumis), blanc sinon
+	// 1. Liens du brouillon (jaune si visé)
 	for (const FBoardLink& Link : Layout.Links)
 	{
 		const bool bHovered = HoveredLink.IsSet() && HoveredLink.GetValue() == Link;
-		const FLinearColor Color = bHovered ? HoverColor : (Current.HasLink(Link.A, Link.B) ? LinkColor : NewColor);
-		PDI->DrawLine(CellCenter(Link.A), CellCenter(Link.B), Color, SDPG_Foreground, bHovered ? 6.f : 3.f);
+		PDI->DrawLine(CellCenter(Link.A), CellCenter(Link.B), bHovered ? HoverColor : LinkColor, SDPG_Foreground, bHovered ? 6.f : 3.f);
 	}
 
-	// 2. Liens qui seront supprimés au Submit : rouge
+	// 2. Liens qui seront supprimés au Submit : gris fin
 	for (const FBoardLink& Link : Current.Links)
 	{
 		if (!Layout.HasLink(Link.A, Link.B))
 		{
-			PDI->DrawLine(CellCenter(Link.A), CellCenter(Link.B), ErrorColor, SDPG_Foreground, 1.5f);
+			PDI->DrawLine(CellCenter(Link.A), CellCenter(Link.B), RemovedColor, SDPG_Foreground, 1.5f);
 		}
 	}
 
-	// 3. Cases du brouillon : cercle de la couleur du type ; vert autour si ajoutée ; rouge autour si en erreur.
-	//    Entités : une flèche dans la direction où elles regardent. Objets : un petit losange.
+	// 3. Cases du brouillon : UN cercle d'état + un point de la couleur du type ;
+	//    entités : une flèche dans la direction où elles regardent ; objets : un petit losange
 	for (const FBoardCell& Cell : Layout.Cells)
 	{
 		const FVector Center = CellCenter(Cell.Coord);
-		const FLinearColor TypeColor = Cell.NodeType ? Cell.NodeType->EditorColor : MissingTypeColor;
-		DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, TypeColor, Size * 0.25f, 24, SDPG_Foreground, 4.f);
 
-		if (!Current.HasCell(Cell.Coord))
-		{
-			DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, NewColor, Size * 0.32f, 24, SDPG_Foreground, 2.f);
-		}
-		if (Draft->GetErrorCells().Contains(Cell.Coord))
-		{
-			DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, ErrorColor, Size * 0.4f, 24, SDPG_Foreground, 2.f);
-		}
+		const FLinearColor StateColor = Draft->GetErrorCells().Contains(Cell.Coord) ? ErrorColor
+			: (Draft->GetWarningCells().Contains(Cell.Coord) ? WarningColor : ValidColor);
+		DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, StateColor, Size * 0.3f, 32, SDPG_Foreground, 4.f);
+
+		const FLinearColor TypeColor = Cell.NodeType ? Cell.NodeType->EditorColor : MissingTypeColor;
+		PDI->DrawPoint(Center, TypeColor, TypeDotSize, SDPG_Foreground);
 
 		for (int32 Index = 0; Index < Cell.Entities.Num(); ++Index)
 		{
@@ -1136,22 +1155,37 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		}
 	}
 
-	// 4. Cases qui seront supprimées au Submit : croix rouge
+	// 4. Cases qui seront supprimées au Submit : croix grise
 	for (const FBoardCell& Cell : Current.Cells)
 	{
 		if (!Layout.HasCell(Cell.Coord))
 		{
-			DrawCellCross(PDI, CellCenter(Cell.Coord), Size * 0.25f, ErrorColor, 3.f);
+			DrawCellCross(PDI, CellCenter(Cell.Coord), Size * 0.25f, RemovedColor, 3.f);
 		}
 	}
 
-	// 5. Case sélectionnée, puis case survolée (sauf si c'est un lien qui est visé)
+	// 5. Ctrl + glisser : les cases déjà touchées, encadrées de la couleur du type appliqué
+	const UBoardNodeType* PaintType = Properties ? Properties->PaintType.Get() : nullptr;
+	const FLinearColor PaintColor = PaintType ? PaintType->EditorColor : MissingTypeColor;
+	if (StrokeKind == EStrokeKind::ApplyType && !bStrokeCancelled)
+	{
+		for (const FIntPoint& Coord : StrokeTouchedCells)
+		{
+			DrawCellSquare(PDI, CellCenter(Coord), Size * 0.4f, PaintColor, 3.f);
+		}
+	}
+
+	// 6. Case sélectionnée, puis case survolée (sauf si c'est un lien qui est visé).
+	//    Pendant Ctrl + glisser, le curseur prend la couleur du type appliqué.
 	if (SelectedCell.IsSet())
 	{
 		DrawCellSquare(PDI, CellCenter(SelectedCell.GetValue()), Size * 0.45f, SelectionColor, 4.f);
 	}
 	if (HoveredCell.IsSet() && !HoveredLink.IsSet())
 	{
-		DrawCellSquare(PDI, CellCenter(HoveredCell.GetValue()), Size * 0.5f, HoverColor, 2.f);
+		const bool bApplying = StrokeKind == EStrokeKind::ApplyType && !bStrokeCancelled;
+		DrawCellSquare(PDI, CellCenter(HoveredCell.GetValue()), Size * 0.5f, bApplying ? PaintColor : HoverColor, bApplying ? 4.f : 2.f);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

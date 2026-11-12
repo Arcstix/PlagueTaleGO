@@ -22,7 +22,7 @@ struct FBoardLayoutSync
 	/**
 	 * Submit : écrit NewLayout dans le Board puis régénère les cases de la scène.
 	 * Le tout forme UNE seule transaction : un Ctrl+Z annule le Submit complet.
-	 * Ne valide PAS le layout : l'appelant décide (option « Ignorer les erreurs » du Level Editor).
+	 * Ne valide PAS le layout : l'appelant décide (option « Ignore Errors » du Level Editor).
 	 */
 	static void Submit(ABoard& Board, const FBoardLayout& NewLayout, const FText& TransactionName);
 

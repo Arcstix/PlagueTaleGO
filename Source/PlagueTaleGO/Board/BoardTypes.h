@@ -27,10 +27,10 @@ enum class EMoveResult : uint8
 UENUM(BlueprintType)
 enum class EBoardDirection : uint8
 {
-	North	UMETA(DisplayName = "Nord (+X)"),
-	East	UMETA(DisplayName = "Est (+Y)"),
-	South	UMETA(DisplayName = "Sud (-X)"),
-	West	UMETA(DisplayName = "Ouest (-Y)")
+	North	UMETA(DisplayName = "North (+X)"),
+	East	UMETA(DisplayName = "East (+Y)"),
+	South	UMETA(DisplayName = "South (-X)"),
+	West	UMETA(DisplayName = "West (-Y)")
 };
 
 namespace BoardDirection

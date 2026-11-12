@@ -67,13 +67,13 @@ UBoardNodeType* FBoardDefinitionRegistry::GetDefaultNodeType()
 
 	if (Count > 1)
 	{
-		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] %d types de case cochés « Type par défaut » : %s est utilisé."),
+		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] %d types de case cochés « Is Default Type » : %s est utilisé."),
 			Count, *GetNameSafe(Found));
 	}
 	if (!Found && Types.Num() > 0)
 	{
 		Found = Types[0];
-		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] Aucun type de case coché « Type par défaut » : %s est utilisé."),
+		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] Aucun type de case coché « Is Default Type » : %s est utilisé."),
 			*GetNameSafe(Found));
 	}
 	return Found;

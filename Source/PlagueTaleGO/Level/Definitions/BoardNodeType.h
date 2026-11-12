@@ -18,7 +18,7 @@ class UMaterialInterface;
  * - Visuel : Mesh / MaterialOverrides / MeshScale, appliqués sur ABoardNode::NodeMesh.
  * - Classe : NodeClass, seulement si ce type a besoin d'un comportement C++ propre.
  */
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (ToolTip = "A cell type for the Board mode (Level Editor): visuals and behaviors of the cells."))
 class PLAGUETALEGO_API UBoardNodeType : public UBoardDefinition
 {
 	GENERATED_BODY()
@@ -36,32 +36,32 @@ public:
 #endif
 
 	// Type présélectionné dans le pinceau du Level Editor. Cocher sur UN seul type (en général « Sol »).
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Type preselected in the Board mode brush. Check it on ONE type only (usually Floor)."))
 	bool bIsDefaultType = false;
 
 	// --- Comportement ---
 
 	// Comportements de la case (ex. Board.Node.Exit = case de sortie).
 	// Seuls les tags testés par le code ont un effet : voir le tableau dans Source/PlagueTaleGOEditor/CLAUDE.md.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node", meta = (Categories = "Board.Node"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node", meta = (Categories = "Board.Node", ToolTip = "Cell behaviors (e.g. Board.Node.Exit = exit cell). Only tags tested by the code have an effect."))
 	FGameplayTagContainer Behaviors;
 
 	// Classe d'acteur générée pour cette case. ABoardNode suffit presque toujours :
 	// une sous-classe n'est utile que pour un comportement C++ propre à ce type.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node", meta = (ToolTip = "Actor class generated for this cell. BoardNode is almost always enough."))
 	TSubclassOf<ABoardNode> NodeClass;
 
 	// --- Visuel ---
 
 	// Mesh de la case. Doit bloquer le canal Visibility pour que le clic du joueur la trouve.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals", meta = (ToolTip = "Cell mesh. It needs a collision, otherwise the player's click cannot find the cell."))
 	TObjectPtr<UStaticMesh> Mesh;
 
 	// Matériaux remplaçant ceux du mesh (index = slot). Case vide = matériau d'origine du mesh.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals", meta = (ToolTip = "Materials replacing the mesh's ones (index = slot). Empty entry = original material."))
 	TArray<TObjectPtr<UMaterialInterface>> MaterialOverrides;
 
 	// Échelle appliquée au mesh
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Node|Visuals", meta = (ToolTip = "Scale applied to the mesh."))
 	FVector MeshScale = FVector::OneVector;
 };

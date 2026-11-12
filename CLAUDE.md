@@ -60,8 +60,8 @@ Guide utilisateur (LD / GA) : document partagé « Guide du Level Editor — Pla
 Détails techniques, état d'avancement et recettes : `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 
 1. Placer **un seul** `BP_Board` : sa position est l'origine de la grille, `CellSize` la taille d'une case.
-2. Construire le plateau avec le **mode « Plateau »** (liste déroulante des modes de l'éditeur > Plateau) :
-   poser / tracer les cases, sélectionner une case pour régler ses entités (départ joueur…), puis « Soumettre ».
+2. Construire le plateau avec le **mode « Board »** (liste déroulante des modes de l'éditeur > Board) :
+   poser / tracer les cases, sélectionner une case pour régler ses entités (départ joueur…), puis « Submit ».
    Niveau construit avant le Level Editor : le migrer d'abord avec la commande console `BoardEditor.ImportLegacy`.
 3. Placer une `CameraActor` avec le tag `BoardCamera`.
 4. Le décor est libre (hors Level Editor).

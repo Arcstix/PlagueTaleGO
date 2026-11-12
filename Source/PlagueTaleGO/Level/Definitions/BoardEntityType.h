@@ -14,7 +14,7 @@
  *
  * Le joueur est l'entité dont PawnClass dérive de APlayerPawn (un seul par niveau).
  */
-UCLASS(BlueprintType)
+UCLASS(BlueprintType, meta = (ToolTip = "A starting entity type for the Board mode (Level Editor): player, enemies..."))
 class PLAGUETALEGO_API UBoardEntityType : public UBoardDefinition
 {
 	GENERATED_BODY()
@@ -25,6 +25,6 @@ public:
 	bool IsPlayer() const;
 
 	// Pion créé au lancement de la partie (BP enfant d'une classe C++ de pion)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Entity")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Entity", meta = (ToolTip = "Pawn spawned when the game starts (Blueprint child of a C++ pawn class). A child of APlayerPawn = the player."))
 	TSubclassOf<ABoardPawn> PawnClass;
 };

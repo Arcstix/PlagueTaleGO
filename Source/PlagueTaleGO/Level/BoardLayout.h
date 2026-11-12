@@ -27,15 +27,15 @@ struct PLAGUETALEGO_API FBoardEntityPlacement
 	GENERATED_BODY()
 
 	// Type d'entité (Data Asset)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Type", ToolTip = "Entity type (Data Asset): player, enemy..."))
 	TObjectPtr<UBoardEntityType> Type;
 
 	// Direction dans laquelle le pion regarde au départ
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Facing", ToolTip = "Direction the pawn faces at start. North = top of the top-down view."))
 	EBoardDirection Facing = EBoardDirection::North;
 
 	// Réglages propres à ce placement (classe choisie par Type->SettingsClass). Peut être nul.
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Settings", ToolTip = "Settings specific to this placement. Created automatically from the type's Settings Class."))
 	TObjectPtr<UBoardPlacementSettings> Settings;
 };
 
@@ -46,11 +46,11 @@ struct PLAGUETALEGO_API FBoardItemPlacement
 	GENERATED_BODY()
 
 	// Type d'objet (Data Asset)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Type", ToolTip = "Item type (Data Asset)."))
 	TObjectPtr<UBoardItemType> Type;
 
 	// Réglages propres à ce placement (classe choisie par Type->SettingsClass). Peut être nul.
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Settings", ToolTip = "Settings specific to this placement. Created automatically from the type's Settings Class."))
 	TObjectPtr<UBoardPlacementSettings> Settings;
 };
 
@@ -61,23 +61,23 @@ struct PLAGUETALEGO_API FBoardCell
 	GENERATED_BODY()
 
 	// Position sur la grille (unique dans le layout)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Coordinates", ToolTip = "Position on the grid (unique in the layout)."))
 	FIntPoint Coord = FIntPoint::ZeroValue;
 
 	// Type de la case : donne son visuel et ses comportements
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Cell Type", ToolTip = "Cell type: gives its visuals and its behaviors."))
 	TObjectPtr<UBoardNodeType> NodeType;
 
 	// Réglages propres à cette case (classe choisie par NodeType->SettingsClass). Peut être nul.
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Cell Settings", ToolTip = "Settings specific to this cell (only if its type declares a Settings Class)."))
 	TObjectPtr<UBoardPlacementSettings> NodeSettings;
 
 	// Entités créées sur cette case au lancement (liste : plusieurs possibles)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Entities", ToolTip = "Entities spawned on this cell when the game starts (player start, enemies...)."))
 	TArray<FBoardEntityPlacement> Entities;
 
 	// Objets posés sur cette case (liste : plusieurs possibles)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Items", ToolTip = "Items placed on this cell."))
 	TArray<FBoardItemPlacement> Items;
 };
 
@@ -93,11 +93,12 @@ struct PLAGUETALEGO_API FBoardLayout
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	// Les cases du plateau
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Cells", ToolTip = "Board cells. Edited only with the Board mode."))
 	TArray<FBoardCell> Cells;
 
 	// Liens explicites entre cases voisines. Pas de lien = pas de passage.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Links", ToolTip = "Explicit links between neighboring cells. No link = no passage."))
 	TSet<FBoardLink> Links;
 
 	// --- Cases ---

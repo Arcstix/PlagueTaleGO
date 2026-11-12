@@ -4,11 +4,11 @@
 #include "Toolkits/BaseToolkit.h"
 
 /**
- * Panneau du mode « Plateau » (à gauche de l'éditeur quand le mode est actif).
+ * Panneau du mode « Board » (à gauche de l'éditeur quand le mode est actif).
  *
  * On garde le panneau standard d'UE : barre d'outils générée depuis FBoardEditorModeCommands,
  * puis les propriétés de l'outil actif (UBoardEditToolProperties), affichées comme un panneau Details.
- * Les boutons « Soumettre » / « Annuler le brouillon » sont des UFUNCTION(CallInEditor) de ces propriétés :
+ * Les boutons « Submit » / « Discard Draft » sont des UFUNCTION(CallInEditor) de ces propriétés :
  * aucun code Slate n'est nécessaire.
  */
 class FBoardEditorModeToolkit : public FModeToolkit

@@ -1,5 +1,6 @@
 ﻿#include "BoardEditorMode.h"
 #include "BoardEditorModeCommands.h"
+#include "BoardEditorInputProcessor.h"
 #include "BoardEditorModeToolkit.h"
 #include "BoardLayoutDraft.h"
 #include "PlagueTaleGOEditor/PlagueTaleGOEditor.h"
@@ -12,6 +13,10 @@
 #include "UnrealClient.h"            // FViewport
 #include "InteractiveToolManager.h"
 #include "Misc/MessageDialog.h"
+#include "Framework/Application/SlateApplication.h"
+
+// Textes affichés à l'utilisateur : en anglais, en LOCTEXT (convention UE pour tout FText affiché)
+#define LOCTEXT_NAMESPACE "BoardEditorMode"
 
 const FEditorModeID UBoardEditorMode::ModeId = TEXT("EM_BoardEditorMode");
 const FString UBoardEditorMode::EditToolName = TEXT("BoardEditTool");
@@ -19,7 +24,7 @@ const FString UBoardEditorMode::EditToolName = TEXT("BoardEditTool");
 UBoardEditorMode::UBoardEditorMode()
 {
 	// Nom et visibilité dans le menu des modes de l'éditeur
-	Info = FEditorModeInfo(ModeId, INVTEXT("Plateau"), FSlateIcon(), /*bIsVisible*/ true);
+	Info = FEditorModeInfo(ModeId, LOCTEXT("ModeName", "Board"), FSlateIcon(), /*bIsVisible*/ true);
 }
 
 void UBoardEditorMode::Enter()
@@ -42,7 +47,7 @@ void UBoardEditorMode::Enter()
 	if (!Board)
 	{
 		FMessageDialog::Open(EAppMsgType::Ok,
-			INVTEXT("Aucun BP_Board dans ce niveau.\n\nPlacer un BP_Board (origine de la grille), puis rouvrir le mode « Plateau »."));
+			LOCTEXT("NoBoard", "No BP_Board in this level.\n\nPlace a BP_Board (grid origin), then reopen the \"Board\" mode."));
 		return;
 	}
 
@@ -55,6 +60,13 @@ void UBoardEditorMode::Enter()
 	StartEditTool();
 
 	MapLoadHandle = FEditorDelegates::OnMapLoad.AddUObject(this, &UBoardEditorMode::HandleMapLoad);
+
+	// Échap doit atteindre l'outil avant les commandes de l'éditeur
+	if (FSlateApplication::IsInitialized())
+	{
+		InputProcessor = MakeShared<FBoardEditorInputProcessor>(this);
+		FSlateApplication::Get().RegisterInputPreProcessor(InputProcessor);
+	}
 }
 
 void UBoardEditorMode::Exit()
@@ -63,6 +75,12 @@ void UBoardEditorMode::Exit()
 
 	FEditorDelegates::OnMapLoad.Remove(MapLoadHandle);
 	MapLoadHandle.Reset();
+
+	if (InputProcessor.IsValid() && FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().UnregisterInputPreProcessor(InputProcessor);
+	}
+	InputProcessor.Reset();
 
 	// Avant Super::Exit, qui arrête l'outil : le Board et le brouillon sont encore là
 	AskAboutPendingDraft();
@@ -209,6 +227,24 @@ void UBoardEditorMode::FocusCell(FIntPoint Coord)
 	Client->Invalidate();
 }
 
+bool UBoardEditorMode::HandleEscape()
+{
+	UBoardEditTool* Tool = GetEditTool();
+	if (!Tool)
+	{
+		return false;
+	}
+
+	// Seulement quand le viewport a le focus : Échap dans un champ du panneau garde son rôle habituel
+	const FLevelEditorViewportClient* Client = GCurrentLevelEditingViewportClient;
+	if (!Client || !Client->Viewport || !Client->Viewport->HasFocus())
+	{
+		return false;
+	}
+
+	return Tool->ExecuteNestedCancelCommand();
+}
+
 void UBoardEditorMode::SaveCamera()
 {
 	SavedViewportClient = FindPerspectiveViewport();
@@ -247,11 +283,11 @@ bool UBoardEditorMode::SubmitDraft(bool bIgnoreErrors)
 			FBoardValidator::LogResult(Result, TEXT("Submit refusé"));
 			return false;
 		}
-		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] Submit forcé malgré %d erreur(s) (option « Ignorer les erreurs »)."),
+		UE_LOG(LogBoardEditor, Warning, TEXT("[BoardEditor] Submit forcé malgré %d erreur(s) (option « Ignore Errors »)."),
 			Result.CountErrors());
 	}
 
-	FBoardLayoutSync::Submit(*Board, Draft->GetLayout(), INVTEXT("Plateau : Submit"));
+	FBoardLayoutSync::Submit(*Board, Draft->GetLayout(), LOCTEXT("SubmitTransaction", "Board: Submit"));
 
 	// Le brouillon repart de ce qui vient d'être écrit : il n'est plus « modifié »
 	Draft->ResetFromBoard(Board);
@@ -282,13 +318,13 @@ void UBoardEditorMode::AskAboutPendingDraft()
 	}
 
 	const EAppReturnType::Type Answer = FMessageDialog::Open(EAppMsgType::YesNo,
-		INVTEXT("Le brouillon du plateau contient des modifications non soumises.\n\nOui : les soumettre maintenant.\nNon : les abandonner."));
+		LOCTEXT("PendingDraft", "The board draft has unsubmitted changes.\n\nYes: submit them now.\nNo: discard them."));
 
 	if (Answer == EAppReturnType::Yes && !SubmitDraft(/*bIgnoreErrors*/ false))
 	{
 		const EAppReturnType::Type Force = FMessageDialog::Open(EAppMsgType::YesNo,
-			FText::Format(INVTEXT("Le brouillon contient {0} erreur(s) (détails dans l'Output Log).\n\nOui : soumettre quand même.\nNon : abandonner les modifications."),
-				FText::AsNumber(Draft->GetValidation().CountErrors())));
+			FText::Format(LOCTEXT("PendingDraftErrors", "The draft contains {0} error(s):\n\n{1}\n\nYes: submit anyway.\nNo: discard the changes."),
+				FText::AsNumber(Draft->GetValidation().CountErrors()), Draft->GetErrorSummary(5)));
 		if (Force == EAppReturnType::Yes)
 		{
 			SubmitDraft(/*bIgnoreErrors*/ true);
@@ -298,3 +334,5 @@ void UBoardEditorMode::AskAboutPendingDraft()
 	// Dans tous les cas, plus rien n'est en attente
 	RevertDraft();
 }
+
+#undef LOCTEXT_NAMESPACE
