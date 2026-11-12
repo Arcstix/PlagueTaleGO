@@ -45,6 +45,10 @@ public:
 	const TSet<FIntPoint>& GetErrorCells() const { return ErrorCells; }
 	const TSet<FIntPoint>& GetWarningCells() const { return WarningCells; }
 
+	// Cases du brouillon qui diffèrent du niveau (nouvelle case, type, entités, objets, réglages ou liens) :
+	// carré fin dans l'aperçu, jusqu'au prochain Submit. Les cases supprimées n'y sont pas (croix grise).
+	const TSet<FIntPoint>& GetModifiedCells() const { return ModifiedCells; }
+
 	// Les erreurs en liste à puces (au plus MaxLines, puis « … et N autre(s) ») pour une fenêtre de message
 	FText GetErrorSummary(int32 MaxLines) const;
 
@@ -53,6 +57,9 @@ public:
 
 private:
 	void Revalidate();
+
+	// Recalcule ModifiedCells en comparant le brouillon au layout du Board
+	void RefreshModifiedCells();
 
 	// Le Board dont on édite le layout (référence faible : le niveau peut être fermé)
 	TWeakObjectPtr<ABoard> Board;
@@ -70,4 +77,5 @@ private:
 	FBoardValidationResult Validation;
 	TSet<FIntPoint> ErrorCells;
 	TSet<FIntPoint> WarningCells;
+	TSet<FIntPoint> ModifiedCells;
 };

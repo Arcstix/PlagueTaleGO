@@ -50,8 +50,10 @@ Règles du tracé (2b) : passer sur une case existante la relie au chemin et con
 cases voisines) ; si la souris saute une case ou passe en diagonale, le chemin est complété en angle droit.
 **Légende de l'aperçu** : cercle = état de la case (vert valide, orange avertissement, rouge erreur) ; point central =
 couleur du type (`Editor Color`) ; flèche = entité (sa direction) ; losange = objet ; croix / trait gris = supprimé au
-Submit ; carré cyan = sélection ; jaune = sous la souris ; pendant Ctrl + glisser, les cases touchées sont encadrées
-de la couleur du type appliqué.
+Submit ; carré fin à la couleur du type = case modifiée, pas encore soumise (nouvelle, type, entités, objets, réglages
+ou liens : `UBoardLayoutDraft::GetModifiedCells`) ; carré cyan = sélection ; jaune = sous la souris ; pendant Ctrl + glisser,
+les cases touchées sont encadrées de la couleur du type appliqué. Si tous les types gardent la couleur blanche par défaut,
+le point central ne change pas au changement de type : donner une `Editor Color` distincte à chaque type.
 Visée d'un lien : près du centre d'une case (30 % de `CellSize`) on vise la case ; vers le bord, entre deux cases
 reliées, on vise le lien (surligné en jaune). Shift + clic sans bouger efface la cible visée ; Shift + glisser n'efface que des cases. Un tracé entier (appui → relâchement) = une seule étape Ctrl+Z.
 Le pinceau présélectionne le type coché **« Is Default Type »** (`UBoardNodeType::bIsDefaultType`).
@@ -386,10 +388,11 @@ ne pourrait plus être converti.
 
 | Date | Retour | Statut |
 |---|---|---|
-| 12/11/2026 | Aperçu peu lisible (cercles blanc / vert / rouge sans légende) : un seul cercle d'état par case (rouge = erreur, orange = avertissement, vert = valide) + point central à la couleur du type | ✅ Écrit (12/11/2026), à tester |
-| 12/11/2026 | Ctrl + glisser : aucun retour visuel | ✅ Écrit (12/11/2026), à tester |
-| 12/11/2026 | Submit refusé : lister les erreurs (5 max) dans la fenêtre au lieu de renvoyer au panneau | ✅ Écrit (12/11/2026), à tester |
-| 12/11/2026 | Échap ne désélectionne pas une case | ✅ Écrit (12/11/2026), à tester |
+| 12/11/2026 | Aperçu peu lisible (cercles blanc / vert / rouge sans légende) : un seul cercle d'état par case (rouge = erreur, orange = avertissement, vert = valide) + point central à la couleur du type | ✅ Testé (12/11/2026) |
+| 12/11/2026 | Ctrl + glisser : aucun retour visuel | ✅ Testé (12/11/2026) : cases touchées encadrées pendant le geste |
+| 12/11/2026 | Après le relâchement (avant Submit), rien n'indique les cases modifiées | ✅ Écrit (12/11/2026), à tester : carré fin à la couleur du type sur toute case modifiée (nouvelle, type, entités, objets, réglages, liens) |
+| 12/11/2026 | Submit refusé : lister les erreurs (5 max) dans la fenêtre au lieu de renvoyer au panneau | ✅ Testé (12/11/2026) |
+| 12/11/2026 | Échap ne désélectionne pas une case | ✅ Testé (12/11/2026) |
 | 12/11/2026 | Traduction anglaise selon la langue de l'éditeur | ✅ Remplacé (12/11/2026) : interface **en anglais uniquement** (panneau, messages de validation, noms / tooltips / catégories des Data Assets du plateau). Traduction française abandonnée (procédure trop lourde pour l'équipe) |
 
 ## 9. Journal des décisions
@@ -463,6 +466,8 @@ ne pourrait plus être converti.
   compilés ensemble : un `#define` oublié sans `#undef` donne une erreur de redéfinition (ou un mauvais espace de noms).
 - **Les tooltips viennent des commentaires** quand `ToolTip` n'est pas renseigné : le commentaire français s'afficherait
   dans l'éditeur. Pour une propriété visible, toujours un `ToolTip` explicite en anglais.
+- **Formes pleines dans l'aperçu** : `PDI->DrawPoint` dessine un carré, et le PDI ne remplit pas une forme sans matériau.
+  Le disque central est fait de cercles concentriques épais (`DrawFilledDisc`).
 - **`LogPlagueTaleGO` n'est pas exportée** : le module éditeur utilise sa propre catégorie `LogBoardEditor`.
 - **Ajouter un module** (`.uproject` + `*.Target.cs` + `*.Build.cs`) : régénérer les fichiers projet
   (clic droit sur `PlagueTaleGO.uproject` > Generate Visual Studio project files).

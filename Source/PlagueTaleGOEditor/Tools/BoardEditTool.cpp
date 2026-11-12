@@ -44,8 +44,8 @@ namespace
 	const FLinearColor LinkColor(0.9f, 0.9f, 0.9f);           // blanc : lien
 	const FLinearColor MissingTypeColor(1.f, 0.f, 1.f);       // magenta : type manquant
 
-	// Taille (en pixels à l'écran) du point central à la couleur du type
-	constexpr float TypeDotSize = 14.f;
+	// Rayon du disque central à la couleur du type, en fraction de CellSize (suit le zoom comme le reste de l'aperçu)
+	constexpr float TypeDotRadius = 0.07f;
 
 	FText NodeTypeLabel(const UBoardNodeType* Type)
 	{
@@ -68,6 +68,18 @@ namespace
 	{
 		PDI->DrawLine(Center + FVector(-HalfSize, -HalfSize, 0.f), Center + FVector(HalfSize, HalfSize, 0.f), Color, SDPG_Foreground, Thickness);
 		PDI->DrawLine(Center + FVector(-HalfSize, HalfSize, 0.f), Center + FVector(HalfSize, -HalfSize, 0.f), Color, SDPG_Foreground, Thickness);
+	}
+
+	// Un disque plein à plat. Le PDI ne sait pas remplir une forme sans matériau : on empile des cercles
+	// concentriques dont l'épaisseur (en unités monde) recouvre l'espace entre eux.
+	void DrawFilledDisc(FPrimitiveDrawInterface* PDI, const FVector& Center, float Radius, const FLinearColor& Color)
+	{
+		constexpr int32 Rings = 4;
+		const float Step = Radius / Rings;
+		for (int32 Ring = 0; Ring < Rings; ++Ring)
+		{
+			DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, Color, Step * (Ring + 0.5f), 16, SDPG_Foreground, Step * 1.2f);
+		}
 	}
 
 	// Le contour carré d'une case
@@ -224,6 +236,7 @@ void UBoardEditTool::Setup()
 		"\n"
 		"Preview: green circle = valid cell, orange = warning, red = error (blocks Submit).\n"
 		"Center dot = color of the cell type. Arrow = entity (its direction), diamond = item.\n"
+		"Thin square in the type color = modified, not submitted yet.\n"
 		"Grey cross or line = removed on Submit. Cyan square = selection, yellow = under the mouse.\n"
 		"Nothing is changed in the level before Submit.");
 	AddToolPropertySource(Help);
@@ -1095,6 +1108,7 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 
 	// Légende (aussi dans l'aide du panneau) :
 	// cercle = état de la case (vert valide, orange avertissement, rouge erreur) ; point = couleur du type ;
+	// carré fin couleur du type = modifié, pas encore soumis ;
 	// croix / trait gris = supprimé au Submit ; carré cyan = sélection ; jaune = sous la souris.
 	const FBoardLayout& Layout = Draft->GetLayout();     // ce qu'on édite
 	const FBoardLayout& Current = Board->GetLayout();    // ce qui est dans le niveau
@@ -1133,7 +1147,13 @@ void UBoardEditTool::Render(IToolsContextRenderAPI* RenderAPI)
 		DrawCircle(PDI, Center, FVector::ForwardVector, FVector::RightVector, StateColor, Size * 0.3f, 32, SDPG_Foreground, 4.f);
 
 		const FLinearColor TypeColor = Cell.NodeType ? Cell.NodeType->EditorColor : MissingTypeColor;
-		PDI->DrawPoint(Center, TypeColor, TypeDotSize, SDPG_Foreground);
+		DrawFilledDisc(PDI, Center, Size * TypeDotRadius, TypeColor);
+
+		// Modifiée et pas encore soumise : carré fin à la couleur du type (reste visible après le relâchement)
+		if (Draft->GetModifiedCells().Contains(Cell.Coord))
+		{
+			DrawCellSquare(PDI, Center, Size * 0.38f, TypeColor, 1.5f);
+		}
 
 		for (int32 Index = 0; Index < Cell.Entities.Num(); ++Index)
 		{
