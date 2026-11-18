@@ -35,13 +35,13 @@ protected:
 	// Nombre de cases éclairées à partir de la case du joueur (non comprise)
 	UPROPERTY(EditDefaultsOnly, Category = "Item", meta = (ClampMin = "1",
 		DisplayName = "Range (cells)",
-		ToolTip = "Number of cells lit in the chosen direction, starting next to the player."))
+		ToolTip = "Number of grid positions lit in the chosen direction, starting next to the player. A position without a cell still counts."))
 	int32 Range = 3;
 
 	// Vrai : la lumière s'arrête à la première coordonnée sans case.
 	// Faux : elle saute les trous et continue jusqu'à la portée. En attente de la décision des GD.
 	UPROPERTY(EditDefaultsOnly, Category = "Item", meta = (
 		DisplayName = "Stop At Gap",
-		ToolTip = "If checked, the light stops at the first grid position without a cell. Otherwise it skips gaps until it reaches its range."))
+		ToolTip = "If checked, the light stops at the first grid position without a cell. Otherwise it skips it (the gap still uses up range)."))
 	bool bStopAtGap = false;
 };

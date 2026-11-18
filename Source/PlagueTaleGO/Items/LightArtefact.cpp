@@ -2,6 +2,7 @@
 
 
 #include "LightArtefact.h"
+#include "PlagueTaleGO/Board/BoardSubsystem.h"
 
 ULightArtefact::ULightArtefact()
 {
@@ -11,7 +12,10 @@ ULightArtefact::ULightArtefact()
 
 TArray<ABoardNode*> ULightArtefact::Use(const FBoardItemUseContext& Context)
 {
-	// Tâche 10 : renverra Context.Board->GetNodesInDirection(Context.OriginNode, Context.Direction, Range, bStopAtGap).
-	// En attendant, aucune case n'est touchée.
-	return {};
+	if (!Context.Board || !Context.OriginNode)
+	{
+		return {};
+	}
+	// Le plateau fait le calcul : il est la seule autorité sur la grille
+	return Context.Board->GetNodesInDirection(Context.OriginNode, Context.Direction, Range, bStopAtGap);
 }

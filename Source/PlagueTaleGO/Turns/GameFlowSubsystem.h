@@ -53,6 +53,12 @@ public:
 	// Objet ramassé, à utiliser au début du prochain tour joueur
 	bool HasPendingItem() const { return PendingItem != nullptr; }
 
+	UFUNCTION(BlueprintPure, Category = "GameFlow")
+	UBoardItem* GetPendingItem() const { return PendingItem; }
+
+	// Rend l'objet en attente et le retire (appelé par UItemUseState une fois l'objet utilisé)
+	UBoardItem* ConsumePendingItem();
+
 	// UI, debug, sons…
 	UPROPERTY(BlueprintAssignable, Category = "GameFlow")
 	FOnGameFlowStateChanged OnStateChanged;
@@ -60,6 +66,14 @@ public:
 private:
 	// Toutes les règles de transition sont ICI et nulle part ailleurs
 	TSubclassOf<UGameFlowState> DecideNextState() const;
+
+	// Conséquences de l'état qui vient de finir (ex. prendre l'objet de la case).
+	// Appelé par Advance juste avant DecideNextState, qui reste const : décider ne modifie rien.
+	void HandleFinishedState();
+
+	// Si le joueur est sur une case qui donne un objet : le prend et le met en attente
+	void TryPickUpItem();
+	
 	TSubclassOf<UGameFlowState> StartOfPlayerTurn() const;
 	bool IsPlayerCaught() const;
 

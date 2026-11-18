@@ -10,6 +10,7 @@
 class ABoardPawn;
 class UBoardItem;
 class UStaticMeshComponent;
+class UMaterialInstanceDynamic;
 class UBoardNodeType;
 class ABoard;
 
@@ -61,6 +62,17 @@ public:
 
 	// Réapplique le visuel du type actuel (ex. après modification du Data Asset du type dans l'éditeur)
 	void RefreshVisuals() { ApplyNodeTypeVisuals(); }
+
+	// --- Surbrillance (visuel uniquement, rien n'est sauvegardé dans le niveau) ---
+
+	// Colore la case : Amount = 0 (couleur normale) à 1 (entièrement Color).
+	// Le matériau de la case doit avoir les paramètres HighlightColor et HighlightAmount.
+	UFUNCTION(BlueprintCallable, Category = "Board|Visuals")
+	void SetHighlight(FLinearColor Color, float Amount);
+
+	// Rend à la case sa couleur normale
+	UFUNCTION(BlueprintCallable, Category = "Board|Visuals")
+	void ClearHighlight();
 
 #if WITH_EDITORONLY_DATA
 	// --- Ancien format, lu uniquement par la migration (commande BoardEditor.ImportLegacy) ---
@@ -125,4 +137,11 @@ private:
 
 	// Le ABoard du niveau, ou nullptr s'il n'y en a pas
 	ABoard* FindBoard() const;
+
+	// Crée au premier besoin une instance dynamique du matériau pour chaque slot du mesh
+	void EnsureHighlightMaterials();
+
+	// Instances dynamiques utilisées pour la surbrillance. Transient : créées en jeu, jamais sauvegardées.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> HighlightMaterials;
 };

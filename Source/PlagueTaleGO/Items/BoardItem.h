@@ -46,6 +46,23 @@ struct FBoardItemUseContext
 };
 
 /**
+ * Un choix possible pour un objet directionnel : une direction et les cases qu'elle toucherait.
+ * Une direction n'est proposée que si elle touche au moins une case.
+ */
+USTRUCT(BlueprintType)
+struct FBoardDirectionOption
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Item")
+	EBoardDirection Direction = EBoardDirection::North;
+
+	// Cases touchées, de la plus proche à la plus lointaine (jamais vide)
+	UPROPERTY(BlueprintReadOnly, Category = "Item")
+	TArray<TObjectPtr<ABoardNode>> Nodes;
+};
+
+/**
  * Base de tous les objets du jeu.
  * Un objet est créé quand le joueur le prend sur une case (PendingItem de UGameFlowSubsystem),
  * puis utilisé au début de son tour suivant par UItemUseState.
@@ -73,6 +90,16 @@ public:
 	// Effet de jeu sur une case touchée. Pas encore défini : vide pour l'instant.
 	virtual void ApplyToNode(ABoardNode* Node) {}
 
+	// --- Choix (objets directionnels) ---
+
+	// Directions valides et leurs cases : celles qui touchent au moins une case.
+	// BaseContext fournit le plateau, l'utilisateur et sa case ; la direction est remplie ici.
+	// Vide si l'objet ne se cible pas par direction, ou si aucune direction ne touche de case.
+	TArray<FBoardDirectionOption> GetDirectionOptions(const FBoardItemUseContext& BaseContext);
+
+	// Retrouve la direction dont fait partie une case cliquée. Faux si la case n'est dans aucun choix.
+	static bool FindDirectionOfNode(const TArray<FBoardDirectionOption>& Options, const ABoardNode* Node, EBoardDirection& OutDirection);
+	
 protected:
 	// Fixé dans le constructeur de chaque objet concret (pas modifiable dans un BP : c'est la nature de l'objet)
 	UPROPERTY(VisibleDefaultsOnly, Category = "Item")

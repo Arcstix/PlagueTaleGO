@@ -12,6 +12,9 @@
 #include "States/PlayerMoveState.h"
 #include "States/StartState.h"
 #include "States/VictoryState.h"
+#include "PlagueTaleGO/Items/BoardItem.h"
+#include "PlagueTaleGO/Board/BoardNode.h"
+#include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
 
 // ---------------------------------------------------------------------------
 // Cycle de vie
@@ -84,6 +87,13 @@ bool UGameFlowSubsystem::CanPlayerAct() const
 	return CurrentState && CurrentState->AllowsPlayerInput();
 }
 
+UBoardItem* UGameFlowSubsystem::ConsumePendingItem()
+{
+	UBoardItem* Item = PendingItem;
+	PendingItem = nullptr;
+	return Item;
+}
+
 // ---------------------------------------------------------------------------
 // Les règles de transition
 // ---------------------------------------------------------------------------
@@ -113,7 +123,6 @@ TSubclassOf<UGameFlowState> UGameFlowSubsystem::DecideNextState() const
 		{
 			return UVictoryState::StaticClass();
 		}
-		// Ramassage de l'objet de la case ici
 		return UEnemyTurnState::StaticClass();
 	}
 
@@ -128,6 +137,59 @@ TSubclassOf<UGameFlowState> UGameFlowSubsystem::DecideNextState() const
 
 	// UVictoryState, UDefeatState : fin de partie, plus de transition
 	return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// Conséquences des états
+// ---------------------------------------------------------------------------
+void UGameFlowSubsystem::HandleFinishedState()
+{
+	if (!CurrentState)
+	{
+		return;   // début de partie : aucun état n'a encore fini
+	}
+
+	if (CurrentState->IsA<UPlayerMoveState>())
+	{
+		TryPickUpItem();
+	}
+}
+
+void UGameFlowSubsystem::TryPickUpItem()
+{
+	UBoardSubsystem* Board = GetBoard();
+	ABoardNode* Node = PlayerPawn ? PlayerPawn->GetCurrentNode() : nullptr;
+	if (!Board || !Node)
+	{
+		return;
+	}
+
+	// La victoire reste prioritaire : sur une sortie, on gagne sans prendre l'objet
+	if (Board->IsExit(Node) || !Board->HasItemAt(Node))
+	{
+		return;
+	}
+
+	// Un seul objet en attente : il est toujours utilisé au tour suivant, donc ce cas ne devrait pas arriver
+	if (PendingItem)
+	{
+		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[GameFlow] Un objet est déjà en attente : %s n'est pas pris."),
+			*GetNameSafe(Node));
+		return;
+	}
+
+	UBoardItemType* Type = Board->ConsumeItemAt(Node);
+	if (!Type || !Type->ItemClass)
+	{
+		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameFlow] Objet sans ItemClass sur %s : rien n'est pris."), *GetNameSafe(Node));
+		return;
+	}
+
+	// L'objet appartient au chef d'orchestre jusqu'à son utilisation
+	PendingItem = NewObject<UBoardItem>(this, Type->ItemClass);
+
+	UE_LOG(LogPlagueTaleGO, Log, TEXT("[GameFlow] Objet pris sur %s : %s"),
+		*GetNameSafe(Node), *GetNameSafe(PendingItem));
 }
 
 TSubclassOf<UGameFlowState> UGameFlowSubsystem::StartOfPlayerTurn() const
@@ -151,6 +213,8 @@ void UGameFlowSubsystem::Advance()
 	do
 	{
 		bAdvanceRequested = false;
+
+		HandleFinishedState();
 
 		const TSubclassOf<UGameFlowState> Next = DecideNextState();
 		if (!Next)

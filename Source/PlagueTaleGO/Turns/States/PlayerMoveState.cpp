@@ -5,6 +5,7 @@
 
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
+#include "PlagueTaleGO/Board/BoardNode.h"
 #include "PlagueTaleGO/Turns/GameFlowSubsystem.h"
 
 void UPlayerMoveState::Enter()

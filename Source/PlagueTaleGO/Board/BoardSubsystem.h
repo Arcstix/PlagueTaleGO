@@ -9,6 +9,8 @@
 class ABoard;
 class ABoardNode;
 class ABoardPawn;
+class ABoardItemPickup;   
+class UBoardItemType;     
 
 // Un USTRUCT est nécessaire : UPROPERTY ne gère pas les conteneurs imbriqués
 USTRUCT()
@@ -18,6 +20,27 @@ struct FNodeOccupants
 
 	UPROPERTY()
 	TArray<TObjectPtr<ABoardPawn>> Entities;
+};
+
+// Un objet posé sur une case, et combien de fois la case peut encore le donner
+USTRUCT()
+struct FNodeArtefact
+{
+	GENERATED_BODY()
+
+	// Type d'objet (Data Asset)
+	UPROPERTY()
+	TObjectPtr<UBoardItemType> Type;
+
+	// Visuel affiché sur la case, détruit quand la case est épuisée
+	UPROPERTY()
+	TObjectPtr<ABoardItemPickup> Pickup;
+
+	// Utilisations restantes (ignoré si bUnlimited)
+	int32 RemainingUses = 1;
+
+	// La case donne l'objet à chaque passage
+	bool bUnlimited = false;
 };
 
 /**
@@ -85,6 +108,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Board")
 	TArray<ABoardNode*> FindPath(ABoardNode* From, ABoardNode* To, bool bAvoidOccupied = false) const;
 
+	/**
+	 * Cases dans une direction en croix à partir de Origin (Origin non comprise), SANS tenir compte des liens.
+	 * Range = nombre de coordonnées parcourues : une coordonnée sans case compte quand même
+	 * (un trou ne fait pas gagner de distance).
+	 * bStopAtGap : vrai = s'arrête à la première coordonnée sans case ; faux = la saute et continue.
+	 * Renvoie les cases dans l'ordre, de la plus proche à la plus lointaine.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Board")
+	TArray<ABoardNode*> GetNodesInDirection(const ABoardNode* Origin, EBoardDirection Direction, int32 Range, bool bStopAtGap) const;
+	
+	// --- Objets ---
+
+	// Enregistre un objet posé sur une case au démarrage (appelé par le GameMode)
+	void RegisterItem(ABoardNode* Node, UBoardItemType* Type, ABoardItemPickup* Pickup);
+
+	// Vrai si la case donne encore un objet
+	UFUNCTION(BlueprintPure, Category = "Board")
+	bool HasItemAt(const ABoardNode* Node) const;
+
+	// Prend l'objet de la case : renvoie son type et retire une utilisation (sauf si illimité).
+	// À zéro, le visuel est détruit et la case redevient normale. nullptr s'il n'y a pas d'objet.
+	UBoardItemType* ConsumeItemAt(ABoardNode* Node);
+	
 private:
 	// Seul endroit qui change la position d'un pion : met à jour
 	// PawnToNode ET Occupancy ensemble, pour qu'ils ne divergent jamais
@@ -101,4 +147,8 @@ private:
 	
 	UPROPERTY()
 	TMap<TObjectPtr<ABoardNode>, FNodeOccupants> Occupancy;
+
+	// Objets posés sur les cases (une entrée par case qui donne encore un objet)
+	UPROPERTY()
+	TMap<TObjectPtr<ABoardNode>, FNodeArtefact> NodeItems;
 };

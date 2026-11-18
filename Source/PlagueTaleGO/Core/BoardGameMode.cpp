@@ -13,6 +13,14 @@
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
 #include "PlagueTaleGO/Turns/GameFlowSubsystem.h"
+#include "PlagueTaleGO/Items/BoardItemPickup.h"
+#include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
+
+ABoardGameMode::ABoardGameMode()
+{
+	// Par défaut, le visuel C++ ; un BP enfant peut être choisi dans BP_BoardGameMode
+	ItemPickupClass = ABoardItemPickup::StaticClass();
+}
 
 void ABoardGameMode::StartPlay()
 {
@@ -52,12 +60,17 @@ void ABoardGameMode::SpawnBoardEntities()
 		return;
 	}
 
-	// Les pions de départ sont décrits par le layout du Board (écrit par le Level Editor)
+	// Les pions et les objets de départ sont décrits par le layout du Board (écrit par le Level Editor)
 	for (const FBoardCell& Cell : Board->GetLayout().Cells)
 	{
 		for (const FBoardEntityPlacement& Placement : Cell.Entities)
 		{
 			SpawnEntity(Cell, Placement, *BoardSubsystem);
+		}
+
+		for (const FBoardItemPlacement& Placement : Cell.Items)
+		{
+			SpawnItemPickup(Cell, Placement, *BoardSubsystem);
 		}
 	}
 
@@ -129,4 +142,49 @@ void ABoardGameMode::SpawnEntity(const FBoardCell& Cell, const FBoardEntityPlace
 
 	UE_LOG(LogPlagueTaleGO, Log, TEXT("[GameMode] %s créé sur %s (%d, %d)"),
 		*GetNameSafe(Pawn), *GetNameSafe(Node), Cell.Coord.X, Cell.Coord.Y);
+}
+
+void ABoardGameMode::SpawnItemPickup(const FBoardCell& Cell, const FBoardItemPlacement& Placement,
+	UBoardSubsystem& BoardSubsystem)
+{
+	UWorld* World = GetWorld();
+	if (!World || !ItemPickupClass)
+	{
+		return;
+	}
+
+	UBoardItemType* Type = Placement.Type;
+	if (!Type)
+	{
+		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameMode] Objet sans type sur (%d, %d) : ignoré."), Cell.Coord.X, Cell.Coord.Y);
+		return;
+	}
+
+	ABoardNode* Node = BoardSubsystem.GetNodeAt(Cell.Coord);
+	if (!Node)
+	{
+		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameMode] Pas d'acteur pour la case (%d, %d) : objet %s ignoré (niveau non synchronisé)."),
+			Cell.Coord.X, Cell.Coord.Y, *GetNameSafe(Type));
+		return;
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ABoardItemPickup* Pickup = World->SpawnActor<ABoardItemPickup>(
+		ItemPickupClass, Node->GetActorLocation(), FRotator::ZeroRotator, Params);
+	if (!Pickup)
+	{
+		UE_LOG(LogPlagueTaleGO, Error, TEXT("[GameMode] Impossible de créer le visuel de %s sur %s."),
+			*GetNameSafe(Type), *GetNameSafe(Node));
+		return;
+	}
+
+	Pickup->Setup(Type);
+
+	// Le Board devient la référence : c'est lui qui sait qu'un objet est sur cette case
+	BoardSubsystem.RegisterItem(Node, Type, Pickup);
+
+	UE_LOG(LogPlagueTaleGO, Log, TEXT("[GameMode] Objet %s posé sur %s (%d, %d)"),
+		*GetNameSafe(Type), *GetNameSafe(Node), Cell.Coord.X, Cell.Coord.Y);
 }

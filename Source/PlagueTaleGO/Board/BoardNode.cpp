@@ -6,9 +6,16 @@
 #include "BoardTags.h"
 #include "EngineUtils.h"   // TActorIterator
 #include "Components/StaticMeshComponent.h"
-#include "PlagueTaleGO/Entities/ABoardPawn.h"
-#include "PlagueTaleGO/Items/BoardItem.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
+
+namespace
+{
+	// Doivent correspondre exactement aux paramètres du matériau des cases
+	const FName HighlightColorParam(TEXT("HighlightColor"));
+	const FName HighlightAmountParam(TEXT("HighlightAmount"));
+}
 
 ABoardNode::ABoardNode()
 {
@@ -38,6 +45,30 @@ void ABoardNode::SetNodeType(UBoardNodeType* InNodeType)
 {
 	NodeType = InNodeType;
 	ApplyNodeTypeVisuals();
+}
+
+void ABoardNode::SetHighlight(FLinearColor Color, float Amount)
+{
+	EnsureHighlightMaterials();
+	
+	const float ClampedAmount = FMath::Clamp(Amount, 0.f, 1.f);
+	for (UMaterialInstanceDynamic* Material : HighlightMaterials)
+	{
+		if (Material)
+		{
+			Material->SetVectorParameterValue(HighlightColorParam, Color);
+			Material->SetScalarParameterValue(HighlightAmountParam, ClampedAmount);
+		}
+	}
+}
+
+void ABoardNode::ClearHighlight()
+{
+	if (HighlightMaterials.Num() == 0)
+	{
+		return;   // jamais colorée : inutile de créer des instances pour rien
+	}
+	SetHighlight(FLinearColor::Black, 0.f);
 }
 
 void ABoardNode::OnConstruction(const FTransform& Transform)
@@ -80,6 +111,7 @@ void ABoardNode::ApplyNodeTypeVisuals()
 
 	// On repart des matériaux du mesh, puis on applique les surcharges du type (case vide = pas de surcharge)
 	NodeMesh->EmptyOverrideMaterials();
+	HighlightMaterials.Reset();
 	if (!NodeType)
 	{
 		return;
@@ -103,4 +135,21 @@ ABoard* ABoardNode::FindBoard() const
 
 	TActorIterator<ABoard> It(World);
 	return It ? *It : nullptr;
+}
+
+void ABoardNode::EnsureHighlightMaterials()
+{
+	if (!NodeMesh || HighlightMaterials.Num() > 0)
+	{
+		return;   // déjà créées
+	}
+
+	// Une instance dynamique par slot : elle remplace le matériau du slot et permet de changer ses paramètres
+	for (int32 Slot = 0; Slot < NodeMesh->GetNumMaterials(); ++Slot)
+	{
+		if (UMaterialInstanceDynamic* Material = NodeMesh->CreateAndSetMaterialInstanceDynamic(Slot))
+		{
+			HighlightMaterials.Add(Material);
+		}
+	}
 }

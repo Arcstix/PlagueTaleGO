@@ -7,6 +7,8 @@
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Level/Validation/BoardValidator.h"
 #include "EngineUtils.h"
+#include "PlagueTaleGO/Items/BoardItemPickup.h"
+#include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
 
 void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -15,6 +17,7 @@ void UBoardSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	NodesByCoord.Reset();
 	Occupancy.Reset();
 	PawnToNode.Reset();
+	NodeItems.Reset();
 
 	// 1. Le Board du niveau (grille + layout)
 	TActorIterator<ABoard> BoardIt(&InWorld);
@@ -220,6 +223,97 @@ TArray<ABoardNode*> UBoardSubsystem::FindPath(ABoardNode* From, ABoardNode* To, 
 	}
 	Algo::Reverse(Path);
 	return Path;
+}
+
+TArray<ABoardNode*> UBoardSubsystem::GetNodesInDirection(const ABoardNode* Origin, EBoardDirection Direction,
+	int32 Range, bool bStopAtGap) const
+{
+	TArray<ABoardNode*> Result;
+	if (!Origin || Range <= 0)
+	{
+		return Result;
+	}
+
+	const FIntPoint Start = Origin->GetGridCoord();
+	const FIntPoint Step = BoardDirection::ToGridOffset(Direction);
+
+	// Un pas = une coordonnée de la grille, qu'il y ait une case ou non
+	for (int32 Distance = 1; Distance <= Range; ++Distance)
+	{
+		ABoardNode* Node = GetNodeAt(Start + Step * Distance);
+		if (!Node)
+		{
+			if (bStopAtGap)
+			{
+				break;      // la lumière s'arrête au premier trou
+			}
+			continue;       // le trou est sauté, mais il a consommé un pas de la portée
+		}
+		Result.Add(Node);
+	}
+
+	return Result;
+}
+
+void UBoardSubsystem::RegisterItem(ABoardNode* Node, UBoardItemType* Type, ABoardItemPickup* Pickup)
+{
+	if (!Node || !Type)
+	{
+		return;
+	}
+
+	// Un seul objet par case pour l'instant (le layout en permet plusieurs : voir tâche 9)
+	if (NodeItems.Contains(Node))
+	{
+		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Board] %s porte déjà un objet : %s ignoré."),
+			*GetNameSafe(Node), *GetNameSafe(Type));
+		if (Pickup)
+		{
+			Pickup->Destroy();   // pas de visuel pour un objet qu'on ne pourra pas prendre
+		}
+		return;
+	}
+
+	FNodeArtefact& Item = NodeItems.Add(Node);
+	Item.Type = Type;
+	Item.Pickup = Pickup;
+	Item.bUnlimited = Type->bUnlimitedUses;
+	Item.RemainingUses = FMath::Max(Type->MaxUses, 1);
+}
+
+bool UBoardSubsystem::HasItemAt(const ABoardNode* Node) const
+{
+	return Node && NodeItems.Contains(Node);
+}
+
+UBoardItemType* UBoardSubsystem::ConsumeItemAt(ABoardNode* Node)
+{
+	FNodeArtefact* Item = Node ? NodeItems.Find(Node) : nullptr;
+	if (!Item)
+	{
+		return nullptr;
+	}
+
+	UBoardItemType* Type = Item->Type;
+
+	if (!Item->bUnlimited)
+	{
+		--Item->RemainingUses;
+
+		if (Item->RemainingUses <= 0)
+		{
+			// Case épuisée : on retire le visuel, la case redevient normale
+			if (Item->Pickup)
+			{
+				Item->Pickup->Destroy();
+			}
+			NodeItems.Remove(Node);   // Item n'est plus valide après cette ligne
+
+			UE_LOG(LogPlagueTaleGO, Log, TEXT("[Board] %s : objet épuisé, la case redevient normale."), *GetNameSafe(Node));
+		}
+	}
+
+	return Type;
 }
 
 void UBoardSubsystem::SetPawnNode(ABoardPawn* Pawn, ABoardNode* NewNode)
