@@ -54,7 +54,7 @@ void UItemUseState::Enter()
 	case EBoardItemTargeting::None:
 	default:
 		// Objet sans choix : utilisé tout de suite
-		ApplyToNodes(Item->Use(Context));
+		ApplyToNodes(Context, Item->Use(Context));
 		break;
 	}
 }
@@ -68,14 +68,18 @@ void UItemUseState::Exit()
 	}
 
 	HideOptions();
-	for (ABoardNode* Node : LitNodes)
+
+	// Utilisation interrompue pendant le feedback : l'objet nettoie lui-même ce qu'il a affiché
+	if (Item && AffectedNodes.Num() > 0)
 	{
-		if (Node)
+		TArray<ABoardNode*> Nodes;
+		for (ABoardNode* Node : AffectedNodes)
 		{
-			Node->ClearHighlight();
+			Nodes.Add(Node);
 		}
+		Item->StopFeedback(Nodes);
 	}
-	LitNodes.Reset();
+	AffectedNodes.Reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -122,8 +126,46 @@ bool UItemUseState::HandleIntent(const FPlayerIntent& Intent)
 		*GetNameSafe(Item), *UEnum::GetValueAsString(Direction));
 
 	HideOptions();
-	ApplyToNodes(Item->Use(Context));
+	ApplyToNodes(Context,Item->Use(Context));
 	return true;
+}
+
+void UItemUseState::HandleHover(ABoardNode* Node)
+{
+	if (Phase != EPhase::Choosing || !Item)
+	{
+		return;   // pendant le feedback, le survol ne change rien
+	}
+
+	// Une case n'appartient qu'à une seule direction : les branches de la croix ne se croisent pas
+	int32 NewOption = INDEX_NONE;
+	if (Node)
+	{
+		for (int32 Index = 0; Index < Options.Num(); ++Index)
+		{
+			if (Options[Index].Nodes.Contains(Node))
+			{
+				NewOption = Index;
+				break;
+			}
+		}
+	}
+
+	if (NewOption == HoveredOption)
+	{
+		return;   // même direction : rien à refaire
+	}
+
+	// L'ancienne direction redevient jaune, la nouvelle s'illumine
+	if (HoveredOption != INDEX_NONE)
+	{
+		SetOptionColor(HoveredOption, Item->GetSelectableColor());
+	}
+	HoveredOption = NewOption;
+	if (HoveredOption != INDEX_NONE)
+	{
+		SetOptionColor(HoveredOption, Item->GetHoverColor());
+	}
 }
 
 bool UItemUseState::BuildContext(FBoardItemUseContext& OutContext) const
@@ -163,12 +205,28 @@ void UItemUseState::HideOptions()
 			}
 		}
 	}
+	HoveredOption = INDEX_NONE;
+}
+
+void UItemUseState::SetOptionColor(int32 OptionIndex, const FLinearColor& Color)
+{
+	if (!Options.IsValidIndex(OptionIndex))
+	{
+		return;
+	}
+	for (ABoardNode* Node : Options[OptionIndex].Nodes)
+	{
+		if (Node)
+		{
+			Node->SetHighlight(Color, 1.f);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
 // Effet et feedback
 // ---------------------------------------------------------------------------
-void UItemUseState::ApplyToNodes(const TArray<ABoardNode*>& Nodes)
+void UItemUseState::ApplyToNodes(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes)
 {
 	Phase = EPhase::Feedback;   // plus aucun clic accepté
 
@@ -177,42 +235,32 @@ void UItemUseState::ApplyToNodes(const TArray<ABoardNode*>& Nodes)
 		Item->ApplyToNode(Node);   // effet de jeu : vide pour l'instant
 	}
 
-	StartFeedback(Nodes);
+	StartFeedback(Context, Nodes);
 }
 
-void UItemUseState::StartFeedback(const TArray<ABoardNode*>& Nodes)
+void UItemUseState::StartFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes)
 {
-	// Provisoire (tâche 17 : PlayHighlightFade) : les cases touchées s'allument, puis s'éteignent
-	LitNodes.Reset();
+	AffectedNodes.Reset();
 	for (ABoardNode* Node : Nodes)
 	{
-		if (Node)
-		{
-			Node->SetHighlight(ResultColor, 1.f);
-			LitNodes.Add(Node);
-		}
+		AffectedNodes.Add(Node);
 	}
 
+	// L'objet joue SON feedback et indique combien de temps il dure
+	const float Duration = Item->PlayFeedback(Context, Nodes);
+
 	UWorld* World = GetWorld();
-	if (!World || Nodes.Num() == 0)
+	if (!World || Duration <= 0.f)
 	{
 		OnFeedbackFinished();
 		return;
 	}
-	World->GetTimerManager().SetTimer(FeedbackTimer, this, &UItemUseState::OnFeedbackFinished, FeedbackDuration, false);
+	World->GetTimerManager().SetTimer(FeedbackTimer, this, &UItemUseState::OnFeedbackFinished, Duration, false);
 }
 
 void UItemUseState::OnFeedbackFinished()
 {
-	for (ABoardNode* Node : LitNodes)
-	{
-		if (Node)
-		{
-			Node->ClearHighlight();
-		}
-	}
-	LitNodes.Reset();
-
+	AffectedNodes.Reset();   // feedback terminé normalement : rien à interrompre
 	EndUse();
 }
 

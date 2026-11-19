@@ -82,6 +82,14 @@ bool UGameFlowSubsystem::SubmitPlayerIntent(const FPlayerIntent& Intent)
 	return CurrentState && CurrentState->HandleIntent(Intent);
 }
 
+void UGameFlowSubsystem::SubmitHover(ABoardNode* Node)
+{
+	if (CurrentState && CanPlayerAct())
+	{
+		CurrentState->HandleHover(Node);
+	}
+}
+
 bool UGameFlowSubsystem::CanPlayerAct() const
 {
 	return CurrentState && CurrentState->AllowsPlayerInput();

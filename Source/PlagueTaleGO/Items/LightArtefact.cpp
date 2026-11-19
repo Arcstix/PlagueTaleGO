@@ -3,6 +3,7 @@
 
 #include "LightArtefact.h"
 #include "PlagueTaleGO/Board/BoardSubsystem.h"
+#include "PlagueTaleGO/Board/BoardNode.h"
 
 ULightArtefact::ULightArtefact()
 {
@@ -18,4 +19,27 @@ TArray<ABoardNode*> ULightArtefact::Use(const FBoardItemUseContext& Context)
 	}
 	// Le plateau fait le calcul : il est la seule autorité sur la grille
 	return Context.Board->GetNodesInDirection(Context.OriginNode, Context.Direction, Range, bStopAtGap);
+}
+
+float ULightArtefact::PlayFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& AffectedNodes)
+{
+	for (ABoardNode* Node : AffectedNodes)
+	{
+		if (Node)
+		{
+			Node->PlayHighlightFade(LightFade);
+		}
+	}
+	return LightFade.Duration;
+}
+
+void ULightArtefact::StopFeedback(const TArray<ABoardNode*>& AffectedNodes)
+{
+	for (ABoardNode* Node : AffectedNodes)
+	{
+		if (Node)
+		{
+			Node->ClearHighlight();   // interrompt le fondu et rend la couleur normale
+		}
+	}
 }

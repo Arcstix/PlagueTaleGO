@@ -21,6 +21,7 @@ class PLAGUETALEGO_API ABoardPlayerController : public APlayerController
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void PlayerTick(float DeltaTime) override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "MappingContext")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -36,6 +37,12 @@ protected:
 private:
 	void HandleSelect();
 	void SetupBoardCamera();
+
+	// Vérifie la case sous le curseur et prévient le conducteur si elle a changé
+	void UpdateHover();
+
+	// Dernière case signalée (faible : le controller ne garde pas la case en vie)
+	TWeakObjectPtr<ABoardNode> HoveredNode;
 
 	ABoardNode* GetNodeUnderCursor() const;
 };

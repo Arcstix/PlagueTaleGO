@@ -90,6 +90,16 @@ public:
 	// Effet de jeu sur une case touchée. Pas encore défini : vide pour l'instant.
 	virtual void ApplyToNode(ABoardNode* Node) {}
 
+	// --- Feedback de résultat (propre à chaque objet) ---
+
+	// Joue le feedback visuel après l'utilisation, sur les cases touchées.
+	// Renvoie sa durée en secondes : UItemUseState attend ce temps avant de rendre la main au joueur.
+	// La base ne joue rien et renvoie 0.
+	virtual float PlayFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& AffectedNodes) { return 0.f; }
+
+	// Interrompt le feedback si l'utilisation s'arrête avant sa fin. La base ne fait rien.
+	virtual void StopFeedback(const TArray<ABoardNode*>& AffectedNodes) {}
+
 	// --- Choix (objets directionnels) ---
 
 	// Directions valides et leurs cases : celles qui touchent au moins une case.
@@ -99,9 +109,26 @@ public:
 
 	// Retrouve la direction dont fait partie une case cliquée. Faux si la case n'est dans aucun choix.
 	static bool FindDirectionOfNode(const TArray<FBoardDirectionOption>& Options, const ABoardNode* Node, EBoardDirection& OutDirection);
+
+	// --- Feedback ---
+
+	UFUNCTION(BlueprintPure, Category = "Item|Feedback")
+	FLinearColor GetSelectableColor() const { return SelectableColor; }
+
+	FLinearColor GetHoverColor() const { return HoverColor; }
 	
 protected:
 	// Fixé dans le constructeur de chaque objet concret (pas modifiable dans un BP : c'est la nature de l'objet)
 	UPROPERTY(VisibleDefaultsOnly, Category = "Item")
 	EBoardItemTargeting Targeting = EBoardItemTargeting::None;
+
+	// Couleur des cases sélectionnables pendant le choix (objets directionnels)
+	UPROPERTY(EditDefaultsOnly, Category = "Item|Feedback", meta = (
+		ToolTip = "Color of the cells the player can click while choosing a direction."))
+	FLinearColor SelectableColor = FLinearColor(1.f, 0.85f, 0.f);
+
+	// Couleur de la direction survolée pendant le choix
+	UPROPERTY(EditDefaultsOnly, Category = "Item|Feedback", meta = (
+		ToolTip = "Color of the hovered direction while the player is choosing."))
+	FLinearColor HoverColor = FLinearColor(1.f, 1.f, 0.6f);
 };

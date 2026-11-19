@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BoardItem.h"
+#include "PlagueTaleGO/Board/BoardHighlightType.h"
 #include "LightArtefact.generated.h"
 
 /**
@@ -31,6 +32,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Item")
 	int32 GetRange() const { return Range; }
 
+	// Feedback : fondu de lumière sur les cases éclairées
+	virtual float PlayFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& AffectedNodes) override;
+	virtual void StopFeedback(const TArray<ABoardNode*>& AffectedNodes) override;
+
 protected:
 	// Nombre de cases éclairées à partir de la case du joueur (non comprise)
 	UPROPERTY(EditDefaultsOnly, Category = "Item", meta = (ClampMin = "1",
@@ -44,4 +49,9 @@ protected:
 		DisplayName = "Stop At Gap",
 		ToolTip = "If checked, the light stops at the first grid position without a cell. Otherwise it skips it (the gap still uses up range)."))
 	bool bStopAtGap = false;
+
+	// Fondu joué sur les cases éclairées
+	UPROPERTY(EditDefaultsOnly, Category = "Item|Feedback", meta = (
+		ToolTip = "Light fade played on the lit cells once the artefact is used."))
+	FBoardHighlightFade LightFade;
 };

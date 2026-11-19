@@ -25,6 +25,9 @@ public:
 	virtual void Exit();
 	// Renvoie true si l'intention a été acceptée
 	virtual bool HandleIntent(const FPlayerIntent& Intent) { return false; }
+	// Case survolée par le curseur (nullptr = plus rien de survolé).
+	// Pur affichage : ne change jamais l'état de la partie. La base ne fait rien.
+	virtual void HandleHover(ABoardNode* Node) {}
 	virtual bool AllowsPlayerInput() const { return false; }
 
 	// Permet aux états d'utiliser GetWorld() (timers, subsystems, logs…)

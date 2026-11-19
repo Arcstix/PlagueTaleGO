@@ -3,6 +3,7 @@
 
 #include "BoardNode.h"
 #include "Board.h"
+#include "BoardHighlightType.h"
 #include "BoardTags.h"
 #include "EngineUtils.h"   // TActorIterator
 #include "Components/StaticMeshComponent.h"
@@ -19,8 +20,9 @@ namespace
 
 ABoardNode::ABoardNode()
 {
-	// Les nœuds n'ont pas besoin de Tick
-	PrimaryActorTick.bCanEverTick = false;
+	// Tick seulement pendant un fondu de surbrillance (activé par PlayHighlightFade, coupé à la fin)
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	NodeMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NodeMesh"));
 	RootComponent = NodeMesh;
@@ -49,26 +51,33 @@ void ABoardNode::SetNodeType(UBoardNodeType* InNodeType)
 
 void ABoardNode::SetHighlight(FLinearColor Color, float Amount)
 {
-	EnsureHighlightMaterials();
-	
-	const float ClampedAmount = FMath::Clamp(Amount, 0.f, 1.f);
-	for (UMaterialInstanceDynamic* Material : HighlightMaterials)
-	{
-		if (Material)
-		{
-			Material->SetVectorParameterValue(HighlightColorParam, Color);
-			Material->SetScalarParameterValue(HighlightAmountParam, ClampedAmount);
-		}
-	}
+	StopFade();   // une couleur fixe remplace un fondu en cours
+	ApplyHighlight(Color, Amount);
 }
 
 void ABoardNode::ClearHighlight()
 {
+	StopFade();
 	if (HighlightMaterials.Num() == 0)
 	{
 		return;   // jamais colorée : inutile de créer des instances pour rien
 	}
-	SetHighlight(FLinearColor::Black, 0.f);
+	ApplyHighlight(FLinearColor::Black, 0.f);
+}
+
+void ABoardNode::PlayHighlightFade(const FBoardHighlightFade& Fade)
+{
+	if (Fade.Duration <= 0.f)
+	{
+		ClearHighlight();   // pas de durée : rien à jouer
+		return;
+	}
+
+	ActiveFade = Fade;
+	FadeElapsed = 0.f;
+
+	ApplyHighlight(ActiveFade.Color, 0.f);   // départ : couleur normale
+	SetActorTickEnabled(true);
 }
 
 void ABoardNode::OnConstruction(const FTransform& Transform)
@@ -89,6 +98,34 @@ void ABoardNode::OnConstruction(const FTransform& Transform)
 	GridCoord = Board->WorldToGrid(GetActorLocation());
 	const FVector Snapped = Board->GridToWorld(GridCoord);
 	SetActorLocation(FVector(Snapped.X, Snapped.Y, GetActorLocation().Z));
+}
+
+void ABoardNode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (ActiveFade.Duration <= 0.f)
+	{
+		SetActorTickEnabled(false);   // sécurité : aucun fondu en cours
+		return;
+	}
+
+	FadeElapsed += DeltaSeconds;
+	const float Progress = FMath::Clamp(FadeElapsed / ActiveFade.Duration, 0.f, 1.f);
+
+	ApplyHighlight(ActiveFade.Color, ActiveFade.Evaluate(Progress));
+
+	if (Progress >= 1.f)
+	{
+		StopFade();   // la case reste sur EndAmount
+	}
+}
+
+void ABoardNode::StopFade()
+{
+	ActiveFade.Duration = 0.f;
+	FadeElapsed = 0.f;
+	SetActorTickEnabled(false);
 }
 
 #if WITH_EDITOR
@@ -150,6 +187,21 @@ void ABoardNode::EnsureHighlightMaterials()
 		if (UMaterialInstanceDynamic* Material = NodeMesh->CreateAndSetMaterialInstanceDynamic(Slot))
 		{
 			HighlightMaterials.Add(Material);
+		}
+	}
+}
+
+void ABoardNode::ApplyHighlight(FLinearColor Color, float Amount)
+{
+	EnsureHighlightMaterials();
+
+	const float ClampedAmount = FMath::Clamp(Amount, 0.f, 1.f);
+	for (UMaterialInstanceDynamic* Material : HighlightMaterials)
+	{
+		if (Material)
+		{
+			Material->SetVectorParameterValue(HighlightColorParam, Color);
+			Material->SetScalarParameterValue(HighlightAmountParam, ClampedAmount);
 		}
 	}
 }

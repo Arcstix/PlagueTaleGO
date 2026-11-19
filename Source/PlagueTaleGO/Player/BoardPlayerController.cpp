@@ -46,6 +46,12 @@ void ABoardPlayerController::SetupInputComponent()
 	}
 }
 
+void ABoardPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+	UpdateHover();
+}
+
 void ABoardPlayerController::HandleSelect()
 {
 	UGameFlowSubsystem* GameFlow = GetWorld()->GetSubsystem<UGameFlowSubsystem>();
@@ -88,6 +94,27 @@ void ABoardPlayerController::SetupBoardCamera()
 	}
 
 	SetViewTarget(Cameras[0]);
+}
+
+void ABoardPlayerController::UpdateHover()
+{
+	UWorld* World = GetWorld();
+	UGameFlowSubsystem* GameFlow = World ? World->GetSubsystem<UGameFlowSubsystem>() : nullptr;
+	if (!GameFlow || !GameFlow->CanPlayerAct())
+	{
+		// On oublie la case : quand le joueur reprend la main, la case sous le curseur sera renvoyée
+		HoveredNode = nullptr;
+		return;
+	}
+
+	ABoardNode* Node = GetNodeUnderCursor();
+	if (Node == HoveredNode.Get())
+	{
+		return;   // on n'envoie que les changements, pas un appel par frame
+	}
+
+	HoveredNode = Node;
+	GameFlow->SubmitHover(Node);
 }
 
 ABoardNode* ABoardPlayerController::GetNodeUnderCursor() const

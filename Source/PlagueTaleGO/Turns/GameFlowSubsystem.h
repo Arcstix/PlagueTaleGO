@@ -38,6 +38,9 @@ public:
 	// Seul point d'entrée du controller : transmis à l'état courant
 	bool SubmitPlayerIntent(const FPlayerIntent& Intent);
 
+	// Survol transmis par le controller : passé à l'état courant s'il accepte les entrées
+	void SubmitHover(ABoardNode* Node);
+
 	UFUNCTION(BlueprintPure, Category = "GameFlow")
 	bool CanPlayerAct() const;
 

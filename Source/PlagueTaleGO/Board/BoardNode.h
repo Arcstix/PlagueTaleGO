@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BoardHighlightType.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "BoardNode.generated.h"
@@ -74,6 +75,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Board|Visuals")
 	void ClearHighlight();
 
+	// Joue un fondu de surbrillance. Le Tick n'est activé que pendant le fondu.
+	// En fin de fondu, la case reste sur Fade.EndAmount. SetHighlight ou ClearHighlight l'interrompent.
+	UFUNCTION(BlueprintCallable, Category = "Board|Visuals")
+	void PlayHighlightFade(const FBoardHighlightFade& Fade);
+
+	UFUNCTION(BlueprintPure, Category = "Board|Visuals")
+	bool IsFading() const { return ActiveFade.Duration > 0.f; }
+	
 #if WITH_EDITORONLY_DATA
 	// --- Ancien format, lu uniquement par la migration (commande BoardEditor.ImportLegacy) ---
 	TSubclassOf<ABoardPawn> GetLegacyStartingEntity() const { return StartingEntity_DEPRECATED; }
@@ -86,6 +95,9 @@ protected:
 	// Cale la case sur la grille et applique le visuel de son type.
 	// Rejoué au chargement, au déplacement et après un Ctrl+Z dans l'éditeur.
 	virtual void OnConstruction(const FTransform& Transform) override;
+
+	// Utilisé uniquement pendant un fondu (activé par PlayHighlightFade, coupé à la fin)
+	virtual void Tick(float DeltaSeconds) override;
 
 #if WITH_EDITOR
 	// Après un Ctrl+Z, NodeType a pu changer : on réapplique son visuel
@@ -140,6 +152,16 @@ private:
 
 	// Crée au premier besoin une instance dynamique du matériau pour chaque slot du mesh
 	void EnsureHighlightMaterials();
+
+	// Règle les paramètres du matériau, sans toucher au fondu en cours
+	void ApplyHighlight(FLinearColor Color, float Amount);
+
+	// Arrête le fondu en cours et coupe le Tick
+	void StopFade();
+
+	// Fondu en cours (ActiveFade.Duration = 0 : aucun fondu)
+	FBoardHighlightFade ActiveFade;
+	float FadeElapsed = 0.f;
 
 	// Instances dynamiques utilisées pour la surbrillance. Transient : créées en jeu, jamais sauvegardées.
 	UPROPERTY(Transient)

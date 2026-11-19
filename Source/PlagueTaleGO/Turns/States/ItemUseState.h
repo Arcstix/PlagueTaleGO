@@ -23,6 +23,7 @@ public:
 	virtual void Enter() override;
 	virtual void Exit() override;
 	virtual bool HandleIntent(const FPlayerIntent& Intent) override;
+	virtual void HandleHover(ABoardNode* Node) override;
 
 	// Le joueur ne peut cliquer que pendant le choix
 	virtual bool AllowsPlayerInput() const override { return Phase == EPhase::Choosing; }
@@ -42,11 +43,17 @@ private:
 	void ShowOptions();
 	void HideOptions();
 
+	// Colore toutes les cases d'une option
+	void SetOptionColor(int32 OptionIndex, const FLinearColor& Color);
+
+	// Option actuellement survolée (INDEX_NONE = aucune)
+	int32 HoveredOption = INDEX_NONE;
+
 	// Applique l'objet sur les cases touchées, puis lance le feedback
-	void ApplyToNodes(const TArray<ABoardNode*>& Nodes);
+	void ApplyToNodes(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes);
 
 	// Feedback de résultat (tâche 17 : remplacé par un fondu)
-	void StartFeedback(const TArray<ABoardNode*>& Nodes);
+	void StartFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes);
 	void OnFeedbackFinished();
 
 	// Fin de l'utilisation : l'objet est consommé, l'état signale qu'il a fini
@@ -59,9 +66,9 @@ private:
 	UPROPERTY()
 	TArray<FBoardDirectionOption> Options;
 
-	// Cases allumées par le feedback, à éteindre à la fin
+	// Cases touchées par l'objet (pour interrompre son feedback si besoin)
 	UPROPERTY()
-	TArray<TObjectPtr<ABoardNode>> LitNodes;
+	TArray<TObjectPtr<ABoardNode>> AffectedNodes;
 
 	FTimerHandle FeedbackTimer;
 	EPhase Phase = EPhase::Choosing;
