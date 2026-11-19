@@ -3,6 +3,8 @@
 
 #include "PlayerMoveState.h"
 
+#include "Engine/Engine.h"
+
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
 #include "PlagueTaleGO/Board/BoardNode.h"
@@ -55,6 +57,19 @@ void UPlayerMoveState::HandleMoveFinished(ABoardPawn* MovedPawn)
 {
 	if (bMoveInProgress)
 	{
+		// DEBUG : position logique du joueur (lue dans le BoardSubsystem)
+		if (const ABoardNode* Node = MovedPawn ? MovedPawn->GetCurrentNode() : nullptr)
+		{
+			const FIntPoint Coord = Node->GetGridCoord();
+			UE_LOG(LogPlagueTaleGO, Log, TEXT("[PlayerMove] Joueur sur %s (%d, %d)"),
+				*GetNameSafe(Node), Coord.X, Coord.Y);
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green,
+					FString::Printf(TEXT("Joueur sur %s (%d, %d)"), *GetNameSafe(Node), Coord.X, Coord.Y));
+			}
+		}
+
 		Finish();   // le chef d'orchestre décide de la suite (Victory ou EnemyTurn)
 	}
 }
