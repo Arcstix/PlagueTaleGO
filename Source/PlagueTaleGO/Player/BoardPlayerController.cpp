@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Turns/GameFlowSubsystem.h"
+#include "PlagueTaleGO/Camera/BoardCameraRig.h"
 
 void ABoardPlayerController::BeginPlay()
 {
@@ -78,22 +79,25 @@ void ABoardPlayerController::HandleSelect()
 
 void ABoardPlayerController::SetupBoardCamera()
 {
+	// N'importe quel acteur avec le tag : le rig, ou un ancien CameraActor
 	TArray<AActor*> Cameras;
-	UGameplayStatics::GetAllActorsOfClassWithTag(this, ACameraActor::StaticClass(), BoardCameraTag, Cameras);
+	UGameplayStatics::GetAllActorsWithTag(this, BoardCameraTag, Cameras);
 
 	if (Cameras.Num() == 0)
 	{
-		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Controller] Aucune caméra avec le tag '%s' dans le niveau."),
+		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Controller] Aucun acteur avec le tag '%s' dans le niveau."),
 			*BoardCameraTag.ToString());
 		return;
 	}
 	if (Cameras.Num() > 1)
 	{
-		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Controller] Plusieurs caméras avec le tag '%s' : %s utilisée."),
+		UE_LOG(LogPlagueTaleGO, Warning, TEXT("[Controller] Plusieurs acteurs avec le tag '%s' : %s utilisé."),
 			*BoardCameraTag.ToString(), *GetNameSafe(Cameras[0]));
 	}
 
-	SetViewTarget(Cameras[0]);
+	AActor* ViewActor = Cameras[0];
+	CameraRig = Cast<ABoardCameraRig>(ViewActor);   // les tâches suivantes lui enverront les entrées
+	SetViewTarget(ViewActor);
 }
 
 void ABoardPlayerController::UpdateHover()

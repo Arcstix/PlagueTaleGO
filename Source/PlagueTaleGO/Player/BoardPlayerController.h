@@ -8,6 +8,7 @@
 class UInputAction;
 class UInputMappingContext;
 class ABoardNode;
+class ABoardCameraRig;
 
 /**
  * Transforme les entrées du joueur en intentions pour UGameFlowSubsystem.
@@ -18,6 +19,10 @@ class PLAGUETALEGO_API ABoardPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+public:
+	// Rig de caméra du niveau (nullptr si la vue est un simple CameraActor)
+	ABoardCameraRig* GetCameraRig() const { return CameraRig; }
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -45,4 +50,7 @@ private:
 	TWeakObjectPtr<ABoardNode> HoveredNode;
 
 	ABoardNode* GetNodeUnderCursor() const;
+
+	UPROPERTY()
+	TObjectPtr<ABoardCameraRig> CameraRig;
 };
