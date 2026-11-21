@@ -8,6 +8,7 @@
 #include "PlagueTaleGO/PlagueTaleGO.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
 #include "PlagueTaleGO/Board/BoardNode.h"
+#include "PlagueTaleGO/Board/BoardSubsystem.h"
 #include "PlagueTaleGO/Turns/GameFlowSubsystem.h"
 
 void UPlayerMoveState::Enter()
@@ -51,6 +52,18 @@ bool UPlayerMoveState::HandleIntent(const FPlayerIntent& Intent)
 
 	bMoveInProgress = true;   // on attend la fin de l'animation
 	return true;
+}
+
+bool UPlayerMoveState::IsNodeSelectable(ABoardNode* Node) const
+{
+	if (bMoveInProgress)
+	{
+		return false;
+	}
+
+	UBoardSubsystem* Board = GetOwner()->GetBoard();
+	APlayerPawn* Player = GetOwner()->GetPlayerPawn();
+	return Board && Player && Board->CanMovePawn(Player, Node) == EMoveResult::Accepted;
 }
 
 void UPlayerMoveState::HandleMoveFinished(ABoardPawn* MovedPawn)

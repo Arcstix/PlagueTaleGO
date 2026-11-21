@@ -9,6 +9,7 @@ class UBoardNodeType;
 class UBoardEntityType;
 class UBoardItemType;
 class UBoardPlacementSettings;
+class UBoardCameraView;
 
 /**
  * Ce fichier décrit le « layout » d'un niveau : la description complète du plateau
@@ -79,6 +80,10 @@ struct PLAGUETALEGO_API FBoardCell
 	// Objets posés sur cette case (liste : plusieurs possibles)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Items", ToolTip = "Items placed on this cell."))
 	TArray<FBoardItemPlacement> Items;
+
+	// Point de vue appliqué quand le joueur arrive sur cette case (optionnel). Vide = la caméra ne change pas.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Board|Level", meta = (DisplayName = "Camera View", ToolTip = "Camera view used as the new default view when the player arrives on this cell. Empty = the camera does not change."))
+	TObjectPtr<UBoardCameraView> CameraView;
 };
 
 /**

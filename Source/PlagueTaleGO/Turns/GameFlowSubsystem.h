@@ -41,6 +41,9 @@ public:
 	// Survol transmis par le controller : passé à l'état courant s'il accepte les entrées
 	void SubmitHover(ABoardNode* Node);
 
+	// Vrai si le joueur peut agir ET que l'état courant accepterait un clic sur cette case
+	bool IsNodeSelectable(ABoardNode* Node) const;
+
 	UFUNCTION(BlueprintPure, Category = "GameFlow")
 	bool CanPlayerAct() const;
 

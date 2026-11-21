@@ -14,6 +14,7 @@ class UBoardLayoutDraft;
 class UBoardNodeType;
 class UBoardPlacementSettings;
 class ABoard;
+class UBoardCameraView;
 
 /**
  * Crée l'outil « Board » quand le mode le demande.
@@ -141,6 +142,10 @@ public:
 	// Objets posés sur cette case. « + » pour en ajouter.
 	UPROPERTY(EditAnywhere, Category = "Selected Cell", meta = (DisplayName = "Items", ToolTip = "Items placed on this cell. Use + to add one.", EditCondition = "bHasSelection", EditConditionHides))
 	TArray<FBoardItemPlacement> Items;
+
+	// Point de vue appliqué quand le joueur arrive sur cette case. Vide = la caméra ne change pas.
+	UPROPERTY(EditAnywhere, Category = "Selected Cell", meta = (DisplayName = "Camera View", ToolTip = "Camera view used as the new default view when the player arrives on this cell. Empty = the camera does not change.", EditCondition = "bHasSelection", EditConditionHides))
+	TObjectPtr<UBoardCameraView> CameraView;
 
 	// Problèmes de validation qui concernent cette case
 	UPROPERTY(VisibleAnywhere, Category = "Selected Cell", meta = (DisplayName = "Cell Problems", ToolTip = "Validation problems that concern this cell.", EditFixedSize, EditCondition = "bHasSelection", EditConditionHides))

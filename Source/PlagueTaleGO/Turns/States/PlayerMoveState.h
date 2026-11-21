@@ -21,6 +21,8 @@ public:
 	// Le joueur peut cliquer tant que son déplacement n'a pas commencé
 	virtual bool AllowsPlayerInput() const override { return !bMoveInProgress; }
 
+	virtual bool IsNodeSelectable(ABoardNode* Node) const override;
+
 private:
 	
 	UFUNCTION()

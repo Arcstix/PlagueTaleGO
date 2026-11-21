@@ -82,6 +82,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Board")
 	ABoardNode* GetPawnNode(const ABoardPawn* Pawn) const;
 
+	// Même vérification que TryMovePawn, sans rien déplacer (survol, clic, caméra…)
+	EMoveResult CanMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode) const;
+	
 	// Seule autorité : valide, met à jour l'occupation, lance le déplacement
 	EMoveResult TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode);
 

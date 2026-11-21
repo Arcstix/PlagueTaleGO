@@ -14,6 +14,7 @@ class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
 class UBoardNodeType;
 class ABoard;
+class UBoardCameraView;
 
 /**
  * Une case du plateau, telle qu'elle existe dans la scène.
@@ -41,6 +42,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Board")
 	UBoardNodeType* GetNodeType() const { return NodeType; }
+
+	// Point de vue de la case (copié du layout à la génération). nullptr = aucun.
+	UBoardCameraView* GetCameraView() const { return CameraView; }
+	void SetCameraView(UBoardCameraView* InCameraView);
 
 	// Vrai si le type de la case possède ce comportement (Gameplay Tag, ex. Board.Node.Exit)
 	UFUNCTION(BlueprintPure, Category = "Board")
@@ -119,6 +124,9 @@ protected:
 	// Type de la case (visuel + comportements)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board")
 	TObjectPtr<UBoardNodeType> NodeType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Board")
+	TObjectPtr<UBoardCameraView> CameraView;
 
 	// --- État d'exécution ---
 

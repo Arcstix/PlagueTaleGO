@@ -168,6 +168,23 @@ void UItemUseState::HandleHover(ABoardNode* Node)
 	}
 }
 
+bool UItemUseState::IsNodeSelectable(ABoardNode* Node) const
+{
+	if (Phase != EPhase::Choosing || !Node)
+	{
+		return false;
+	}
+
+	for (const FBoardDirectionOption& Option : Options)
+	{
+		if (Option.Nodes.Contains(Node))
+		{
+			return true;   // case jaune
+		}
+	}
+	return false;
+}
+
 bool UItemUseState::BuildContext(FBoardItemUseContext& OutContext) const
 {
 	OutContext.Board = GetOwner()->GetBoard();

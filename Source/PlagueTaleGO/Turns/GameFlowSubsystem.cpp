@@ -90,6 +90,11 @@ void UGameFlowSubsystem::SubmitHover(ABoardNode* Node)
 	}
 }
 
+bool UGameFlowSubsystem::IsNodeSelectable(ABoardNode* Node) const
+{
+	return CurrentState && CanPlayerAct() && CurrentState->IsNodeSelectable(Node);
+}
+
 bool UGameFlowSubsystem::CanPlayerAct() const
 {
 	return CurrentState && CurrentState->AllowsPlayerInput();

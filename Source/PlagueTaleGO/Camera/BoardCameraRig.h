@@ -10,6 +10,8 @@
 class USceneComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UBoardCameraBehavior;
+class ABoardNode;
 
 /**
  * Caméra du plateau : un bras et une caméra au bout.
@@ -35,12 +37,20 @@ public:
 	// Vrai tant que la caméra n'a pas atteint sa cible
 	bool IsMoving() const { return IsActorTickEnabled(); }
 
-	// Test temporaire du lissage (à retirer à la tâche 25) : bascule entre la vue de départ et une vue de dessus
-	UFUNCTION(CallInEditor, Category = "Camera|Debug")
-	void DebugToggleTopView();
+	// Pose de cadrage : pivot = position du rig, angle et distance de départ.
+	// Les comportements gardent le pivot et appliquent leur propre point de vue.
+	FBoardCameraPose GetFramingPose() const;
+
+	// --- Entrées, transmises au comportement (appelées par le controller) ---
+	void HandleViewStep(int32 Step);
+	void HandleDragStart();
+	void HandleDrag(const FVector2D& MouseDelta);
+	void HandleDragEnd();
+	void HandlePlayerArrived(ABoardNode* Node);
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -52,16 +62,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UCameraComponent> Camera;
 
+	// Fonctionnement de la caméra : choisi dans la liste déroulante, ses réglages s'affichent dessous
+	UPROPERTY(EditAnywhere, Instanced, Category = "Camera|Behavior", meta = (
+		ToolTip = "How the camera reacts to the player's inputs. Pick a behavior, its settings appear below. Empty = start pose, no input handled."))
+	TObjectPtr<UBoardCameraBehavior> Behavior;
+	
 	// --- Pose de départ (le pivot est la position de l'acteur) ---
 	// Remplacée plus tard par le comportement (tâche 23) et le cadrage automatique (tâche 24)
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Start", meta = (
 		ClampMin = "-89.9", ClampMax = "89.9", Units = "Degrees",
-		ToolTip = "Vertical angle at start. The pivot is the actor location."))
+		ToolTip = "Vertical angle used when no behavior is set. The pivot is the actor location."))
 	float StartPitch = -45.f;
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Start", meta = (
-		Units = "Degrees", ToolTip = "Horizontal angle at start."))
+		Units = "Degrees", ToolTip = "Horizontal angle at start if no behavior set."))
 	float StartYaw = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Start", meta = (
@@ -83,7 +98,6 @@ protected:
 	float ArmLengthSpeed = 6.f;
 
 private:
-	FBoardCameraPose MakeStartPose() const;
 
 	// Place l'acteur sur le pivot et oriente le bras
 	void ApplyPose(const FBoardCameraPose& Pose);

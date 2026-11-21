@@ -771,6 +771,7 @@ void UBoardEditTool::RefreshDetails(bool bCopyCellData)
 		{
 			Item.Settings = DuplicateSettings(Item.Settings, Details);
 		}
+		Details->CameraView = Cell->CameraView;
 	}
 
 	Details->CellProblems.Reset();
@@ -854,6 +855,7 @@ void UBoardEditTool::ApplyDetailsToDraft()
 			{
 				Item.Settings = DuplicateSettings(Item.Settings, Draft);
 			}
+			Cell->CameraView = Details->CameraView;
 			return true;
 		});
 	}

@@ -25,6 +25,8 @@ public:
 	virtual bool HandleIntent(const FPlayerIntent& Intent) override;
 	virtual void HandleHover(ABoardNode* Node) override;
 
+	virtual bool IsNodeSelectable(ABoardNode* Node) const override;
+
 	// Le joueur ne peut cliquer que pendant le choix
 	virtual bool AllowsPlayerInput() const override { return Phase == EPhase::Choosing; }
 

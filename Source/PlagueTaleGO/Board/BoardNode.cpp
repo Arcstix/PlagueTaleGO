@@ -28,6 +28,11 @@ ABoardNode::ABoardNode()
 	RootComponent = NodeMesh;
 }
 
+void ABoardNode::SetCameraView(UBoardCameraView* InCameraView)
+{
+	CameraView = InCameraView;
+}
+
 bool ABoardNode::HasBehavior(FGameplayTag Behavior) const
 {
 	return NodeType && NodeType->HasBehavior(Behavior);

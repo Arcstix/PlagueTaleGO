@@ -2,6 +2,8 @@
 
 
 #include "BoardCameraRig.h"
+
+#include "BoardCameraBehavior.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -38,18 +40,6 @@ ABoardCameraRig::ABoardCameraRig()
 	Tags.Add(TEXT("BoardCamera"));
 }
 
-void ABoardCameraRig::DebugToggleTopView()
-{
-	if (!HasActorBegunPlay())
-	{
-		return;   // uniquement en PIE
-	}
-
-	FBoardCameraPose Pose = TargetPose;
-	Pose.Pitch = (Pose.Pitch < -80.f) ? StartPitch : -89.f;
-	SetTargetPose(Pose);
-}
-
 // Called when the game starts or when spawned
 void ABoardCameraRig::BeginPlay()
 {
@@ -57,7 +47,21 @@ void ABoardCameraRig::BeginPlay()
 	// Le bras se met à jour après le rig dans la même image : pas d'image de retard
 	SpringArm->PrimaryComponentTick.AddPrerequisite(this, PrimaryActorTick);
 
-	SetTargetPose(MakeStartPose(), true);
+	SetTargetPose(GetFramingPose(), true);
+
+	if (Behavior)
+	{
+		Behavior->Activate(this);
+	}
+}
+
+void ABoardCameraRig::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (Behavior)
+	{
+		Behavior->Deactivate();
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void ABoardCameraRig::OnConstruction(const FTransform& Transform)
@@ -65,10 +69,10 @@ void ABoardCameraRig::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 
 	// Aperçu dans l'éditeur : la caméra est déjà à sa pose de départ
-	ApplyArm(MakeStartPose());
+	ApplyArm(GetFramingPose());
 }
 
-FBoardCameraPose ABoardCameraRig::MakeStartPose() const
+FBoardCameraPose ABoardCameraRig::GetFramingPose() const
 {
 	FBoardCameraPose Pose;
 	Pose.Pivot = GetActorLocation();
@@ -134,5 +138,45 @@ void ABoardCameraRig::SetTargetPose(const FBoardCameraPose& NewTarget, bool bIns
 	}
 
 	SetActorTickEnabled(!HasReachedTarget());
+}
+
+void ABoardCameraRig::HandleViewStep(int32 Step)
+{
+	if (Behavior)
+	{
+		Behavior->HandleViewStep(Step);
+	}
+}
+
+void ABoardCameraRig::HandleDragStart()
+{
+	if (Behavior)
+	{
+		Behavior->HandleDragStart();
+	}
+}
+
+void ABoardCameraRig::HandleDrag(const FVector2D& MouseDelta)
+{
+	if (Behavior)
+	{
+		Behavior->HandleDrag(MouseDelta);
+	}
+}
+
+void ABoardCameraRig::HandleDragEnd()
+{
+	if (Behavior)
+	{
+		Behavior->HandleDragEnd();
+	}
+}
+
+void ABoardCameraRig::HandlePlayerArrived(ABoardNode* Node)
+{
+	if (Behavior)
+	{
+		Behavior->HandlePlayerArrived(Node);
+	}
 }
 

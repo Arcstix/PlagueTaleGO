@@ -23,11 +23,18 @@ public:
 	
 	virtual void Enter();
 	virtual void Exit();
+	
 	// Renvoie true si l'intention a été acceptée
 	virtual bool HandleIntent(const FPlayerIntent& Intent) { return false; }
+	
 	// Case survolée par le curseur (nullptr = plus rien de survolé).
 	// Pur affichage : ne change jamais l'état de la partie. La base ne fait rien.
 	virtual void HandleHover(ABoardNode* Node) {}
+
+	// Vrai si cliquer cette case serait accepté par l'état (le controller choisit alors entre jeu et caméra).
+	// La base ne rend aucune case jouable.
+	virtual bool IsNodeSelectable(ABoardNode* Node) const { return false; }
+	
 	virtual bool AllowsPlayerInput() const { return false; }
 
 	// Permet aux états d'utiliser GetWorld() (timers, subsystems, logs…)

@@ -155,6 +155,7 @@ void FBoardLayoutSync::SyncNodeActors(ABoard& Board)
 
 		Node->Modify();
 		Node->SetNodeType(Cell.NodeType);
+		Node->SetCameraView(Cell.CameraView);
 
 		// Une case générée ne se déplace pas à la main (sa position vient de la grille)
 		Node->SetLockLocation(true);

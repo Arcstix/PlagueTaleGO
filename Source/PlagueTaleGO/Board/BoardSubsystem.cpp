@@ -138,6 +138,37 @@ ABoardNode* UBoardSubsystem::GetPawnNode(const ABoardPawn* Pawn) const
 	return Found ? Found : nullptr;
 }
 
+EMoveResult UBoardSubsystem::CanMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode) const
+{
+	if (!Pawn || !InTargetNode)
+	{
+		return EMoveResult::Blocked;
+	}
+	if (Pawn->IsMoving())
+	{
+		return EMoveResult::AlreadyMoving;
+	}
+
+	ABoardNode* FromNode = GetPawnNode(Pawn);
+	if (!FromNode)
+	{
+		return EMoveResult::NoOrigin;
+	}
+	if (!AreLinked(FromNode, InTargetNode))
+	{
+		return EMoveResult::NotAdjacent;
+	}
+	if (InTargetNode->IsBlocked())
+	{
+		return EMoveResult::Blocked;
+	}
+	if (IsOccupied(InTargetNode))
+	{
+		return EMoveResult::Occupied;
+	}
+	return EMoveResult::Accepted;
+}
+
 bool UBoardSubsystem::IsOccupied(const ABoardNode* Node) const
 {
 	const FNodeOccupants* Found = Occupancy.Find(Node);
@@ -341,32 +372,10 @@ void UBoardSubsystem::SetPawnNode(ABoardPawn* Pawn, ABoardNode* NewNode)
 
 EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode)
 {
-	if (!Pawn || !InTargetNode)
+	const EMoveResult Result = CanMovePawn(Pawn, InTargetNode);
+	if (Result != EMoveResult::Accepted)
 	{
-		return EMoveResult::Blocked;
-	}
-	if (Pawn->IsMoving())
-	{
-		return EMoveResult::AlreadyMoving;
-	}
-	
-	ABoardNode* FromNode = GetPawnNode(Pawn);
-
-	if (!FromNode)
-	{
-		return EMoveResult::NoOrigin;
-	}
-	if (!AreLinked(FromNode, InTargetNode))
-	{
-		return EMoveResult::NotAdjacent;
-	}
-	if (InTargetNode->IsBlocked())
-	{
-		return EMoveResult::Blocked;
-	}
-	if (IsOccupied(InTargetNode))
-	{
-		return EMoveResult::Occupied;
+		return Result;
 	}
 
 	SetPawnNode(Pawn, InTargetNode);
