@@ -7,6 +7,15 @@
 		{
 			"Name": "PlagueTaleGO",
 			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
+			"Name": "PlagueTaleGOEditor",
+			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
 	],
