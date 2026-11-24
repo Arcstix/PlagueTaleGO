@@ -129,12 +129,13 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 |---|---|---|---|
 | `ABoardPawn` | `Entities/ABoardPawn.h` | — | Base abstraite : occupation, déplacement en lerp (`MoveDuration`), `OnMoveFinished`, `ApplyPlacementSettings` (vide) |
 | `APlayerPawn` | `Entities/Player/APlayerPawn.h` | `BP_PlayerPawn` | Vide : sert à identifier le joueur |
+| `AWormPawn` | `Entities/Statue/AWormPawn.h` | `BP_WormPawn` | Prototype : ennemi qui avance d'une case vers le joueur par tour (logique dans `UEnemyTurnState`). Placé via `DA_Entity_Worm`. Pas de réglages par placement |
 
-Aucun ennemi en C++. Des assets de prototype (`Sandbox/BP_WormTest`, `MI_Worm`, `M_SpawnWormNode`) existent sans classe C++ correspondante sur `develop`.
+`AStatuePawn` a été renommé `AWormPawn` (redirection `ClassRedirects` dans `Config/DefaultEngine.ini`). `BP_StatuePawn` est l'ancien BP, à ne plus utiliser. `Sandbox/BP_WormTest` est un ancien prototype.
 
 **Objets** : `UBoardItem` est une base abstraite vide. Aucun objet concret. Le layout peut contenir des objets (`FBoardCell::Items`, type `UBoardItemType`), mais rien ne les utilise en jeu : ramassage non implémenté, `PendingItem` jamais renseigné.
 
-**Data Assets de définition** (types de cases / d'entités / d'objets) : `Content/Data/Nodes/` (`DA_Node_Floor`, `DA_Node_Exit`, `DA_Node_Start`, `DA_Node`), `Content/Data/Entities/` (`DA_Entity_Player`). Aucun type d'objet pour l'instant (`Content/Data/Items/` le moment venu). Voir `/Source/PlagueTaleGOEditor/CLAUDE.md`.
+**Data Assets de définition** (types de cases / d'entités / d'objets) : `Content/Data/Nodes/` (`DA_Node_Floor`, `DA_Node_Exit`, `DA_Node_Start`, `DA_Node`), `Content/Data/Entities/` (`DA_Entity_Player`, `DA_Entity_Worm`). Aucun type d'objet pour l'instant (`Content/Data/Items/` le moment venu). Voir `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 
 **États**
 | État | Statut |
@@ -142,5 +143,5 @@ Aucun ennemi en C++. Des assets de prototype (`Sandbox/BP_WormTest`, `MI_Worm`, 
 | `UStartState` | Finit immédiatement (plus tard : intro, caméra) |
 | `UPlayerMoveState` | Implémenté : attend un clic sur une case voisine, puis la fin du déplacement |
 | `UItemUseState` | Stub : finit immédiatement |
-| `UEnemyTurnState` | Stub : finit immédiatement (`IsPlayerCaught()` renvoie toujours `false`) |
+| `UEnemyTurnState` | Prototype : le **premier** `AWormPawn` trouvé avance d'une case vers le joueur (`FindPath` en contournant les cases occupées), puis `Finish()` à la fin de son déplacement. Sans ver ou sans chemin : finit immédiatement. Un seul ver géré. `IsPlayerCaught()` renvoie toujours `false` |
 | `UVictoryState` / `UDefeatState` | Terminaux : log + message à l'écran |

@@ -1,6 +1,5 @@
-﻿// PlayerPawn.cpp
-#include "AWormPawn.h"
-#include "PlagueTaleGO/Board/BoardSubsystem.h"
-#include "Engine/World.h"
+﻿#include "AWormPawn.h"
+
+// Vide pour l'instant : le comportement du ver est piloté par UEnemyTurnState.
 
 
