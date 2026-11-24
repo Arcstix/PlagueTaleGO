@@ -11,7 +11,8 @@ public class PlagueTaleGO : ModuleRules
 		// GameplayTags : comportements des types de cases (Board.Node.*), utilisés dans des headers publics
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		// DeveloperSettings: UBoardAudioSettings ("Board Audio" page of the Project Settings)
+		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings" });
 		
 		if (Target.bBuildEditor) { PrivateDependencyModuleNames.Add("UnrealEd"); }
 
