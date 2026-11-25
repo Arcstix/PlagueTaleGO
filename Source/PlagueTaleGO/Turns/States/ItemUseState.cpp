@@ -7,6 +7,10 @@
 #include "PlagueTaleGO/Board/BoardSubsystem.h"
 #include "PlagueTaleGO/Entities/Player/APlayerPawn.h"
 #include "PlagueTaleGO/PlagueTaleGO.h"
+#include "PlagueTaleGO/Audio/AudioTags.h"
+#include "PlagueTaleGO/Audio/BoardAudioSubsystem.h"
+// Include complet : convertir UBoardItemType* en UBoardDefinition* (contexte audio) exige la classe complète
+#include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 
@@ -247,12 +251,26 @@ void UItemUseState::ApplyToNodes(const FBoardItemUseContext& Context, const TArr
 {
 	Phase = EPhase::Feedback;   // plus aucun clic accepté
 
+	PlayUseSound(Context);
+
 	for (ABoardNode* Node : Nodes)
 	{
 		Item->ApplyToNode(Node);   // effet de jeu : vide pour l'instant
 	}
 
 	StartFeedback(Context, Nodes);
+}
+
+void UItemUseState::PlayUseSound(const FBoardItemUseContext& Context) const
+{
+	UBoardAudioSubsystem* Audio = UBoardAudioSubsystem::Get(this);
+	if (!Audio || !Context.OriginNode)
+	{
+		return;
+	}
+
+	// Le type de l'objet sert de contexte : chaque objet peut avoir son propre son (Sound Overrides de son Data Asset)
+	Audio->PlaySoundAtLocation(AudioTags::Item_Use, Context.OriginNode->GetActorLocation(), Item ? Item->GetItemType() : nullptr);
 }
 
 void UItemUseState::StartFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes)

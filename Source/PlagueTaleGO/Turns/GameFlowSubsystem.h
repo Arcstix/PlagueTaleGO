@@ -79,6 +79,9 @@ private:
 
 	// Si le joueur est sur une case qui donne un objet : le prend et le met en attente
 	void TryPickUpItem();
+
+	// Son de survol : seulement sur une case cliquable dans l'état courant (son différent si elle donne un objet)
+	void PlayHoverSound(ABoardNode* Node) const;
 	
 	TSubclassOf<UGameFlowState> StartOfPlayerTurn() const;
 	bool IsPlayerCaught() const;

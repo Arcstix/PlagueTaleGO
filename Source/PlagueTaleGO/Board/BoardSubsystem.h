@@ -130,6 +130,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool HasItemAt(const ABoardNode* Node) const;
 
+	// Type de l'objet que la case donne encore, ou nullptr (sert notamment de contexte audio au survol)
+	UFUNCTION(BlueprintPure, Category = "Board")
+	UBoardItemType* GetItemTypeAt(const ABoardNode* Node) const;
+
 	// Prend l'objet de la case : renvoie son type et retire une utilisation (sauf si illimité).
 	// À zéro, le visuel est détruit et la case redevient normale. nullptr s'il n'y a pas d'objet.
 	UBoardItemType* ConsumeItemAt(ABoardNode* Node);

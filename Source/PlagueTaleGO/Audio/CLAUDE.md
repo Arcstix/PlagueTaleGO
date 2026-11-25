@@ -98,17 +98,23 @@ Piste : un Sound Mix + `UGameplayStatics::SetSoundMixClassOverride` / `PushSound
 > ⚠️ **Agent : tenir ce tableau à jour dans le même changement que le code** (ajout, déplacement, suppression d'un
 > événement), puis la liste du guide partagé. Les événements ne sont pas figés : indiquer le statut.
 
-État au 25/11/2026 :
+État au 25/11/2026 (survol et utilisation d'objet ajoutés le même jour) :
 
 | Tag | Déclencheur | Nature | Contexte (varie selon) | Statut |
 |---|---|---|---|---|
 | `Audio.Player.Footstep` | `ABoardPawn::BeginMove` via `MoveSoundEvent` (réglé dans `BP_PlayerPawn`) | 3D, court | Type de la case de destination | Branché, prototype |
 | `Audio.Game.Victory` | `UVictoryState::Enter` | 2D, court | — | Branché |
 | `Audio.Game.Defeat` | `UDefeatState::Enter` | 2D, court | — | Branché, pas encore atteignable (`IsPlayerCaught()` = `false`) |
+| `Audio.UI.HoverNode` | `UGameFlowSubsystem::PlayHoverSound` (survol d'une case **cliquable** dans l'état courant, sans objet) | 2D, court | Type de la case survolée | Branché |
+| `Audio.UI.HoverItem` | `UGameFlowSubsystem::PlayHoverSound` (survol d'une case cliquable qui donne un objet ; remplace `HoverNode`) | 2D, court | Type de l'objet (`UBoardSubsystem::GetItemTypeAt`) | Branché |
+| `Audio.Item.Use` | `UItemUseState::PlayUseSound` (début de `ApplyToNodes`, sur la case du joueur) | 3D, court | Type de l'objet | Branché |
 
-**Propositions, non validées par les GD** (ne pas implémenter sans leur accord) : clic refusé (2D), survol d'une case
-jouable (2D, interface), ramassage d'un objet (3D, type d'objet), utilisation de l'artefact de lumière (3D, type d'objet),
-déplacement du ver (3D, via `MoveSoundEvent` de `BP_WormPawn`), présence du ver (boucle 3D attachée, type de pion).
+Le survol ne joue rien au changement vers une case non cliquable ni quand le joueur ne peut pas agir (`UpdateHover` du
+controller n'envoie que les changements de case, et seulement si `CanPlayerAct()`). Pendant le choix d'un objet, passer
+d'une case jaune à une autre de la même direction rejoue le son.
+
+**Propositions, non validées par les GD** (ne pas implémenter sans leur accord) : clic refusé (2D), ramassage d'un objet
+(3D, type d'objet), déplacement du ver (3D, via `MoveSoundEvent` de `BP_WormPawn`), présence du ver (boucle 3D attachée, type de pion).
 
 ## 6. Commandes console
 
@@ -148,6 +154,8 @@ En PIE, console du jeu (touche **²** en AZERTY). Absentes du build Shipping.
 | 24/11/2026 | Son de déplacement générique : `ABoardPawn::MoveSoundEvent` réglé dans le BP | Le plus évolutif : un nouveau pion a son son sans code |
 | 24/11/2026 | Ambiance de niveau = acteur Ambient Sound posé dans le niveau | Contrôlée directement par LD / GA ; ne s'arrête pas en fin de partie (à revoir si les GD le demandent) |
 | 25/11/2026 | Son de déplacement joué au **début** du déplacement, contexte = case de destination | Demande de l'équipe (`ArrivalSoundEvent` renommé `MoveSoundEvent`) |
+| 25/11/2026 | Survol : son seulement sur une case cliquable, 2D ; case avec objet = événement à part (`HoverItem`, contexte = type d'objet) ; joué dans `UGameFlowSubsystem::SubmitHover` (commun à tous les états) | Choix de l'équipe : le son dit « tu peux aller ici » ; le controller reste sans logique de tour |
+| 25/11/2026 | Utilisation d'un objet : un seul événement `Item.Use` sur la case du joueur, selon le type d'objet. Le son de case superposé (`Item.UseOnNode`), ajouté le même jour, a été retiré | Choix de l'équipe : aucune situation où le son de case serait utile |
 
 ## 9. Pièges UE rencontrés
 
@@ -162,5 +170,7 @@ En PIE, console du jeu (touche **²** en AZERTY). Absentes du build Shipping.
 - **Le listener est la caméra**, loin du plateau : une atténuation trop courte rend les sons 3D presque inaudibles
   (point de départ : Inner Radius 3000, Falloff 3000).
 - **`Play*` vs `Spawn*`** (`UGameplayStatics`) : seul `Spawn*` renvoie le composant audio, nécessaire pour arrêter une boucle.
+- **Supprimer un tag natif encore utilisé dans un asset** (ex. `Audio.Item.UseOnNode` dans `DA_AudioLibrary`) : la clé devient
+  invalide (« None ») et le log signale un tag inconnu. Retirer d'abord l'entrée de l'asset, ou la nettoyer après compilation.
 - **Conversion vers `UBoardDefinition*`** (contexte) : un type seulement déclaré (`class UBoardNodeType;`) ne se convertit
   pas implicitement vers sa classe de base → inclure son header dans le `.cpp`.

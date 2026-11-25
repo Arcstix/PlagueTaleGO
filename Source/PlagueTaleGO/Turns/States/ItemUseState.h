@@ -54,6 +54,9 @@ private:
 	// Applique l'objet sur les cases touchées, puis lance le feedback
 	void ApplyToNodes(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes);
 
+	// Son de l'utilisation, sur la case du joueur (varie selon le type de l'objet)
+	void PlayUseSound(const FBoardItemUseContext& Context) const;
+
 	// Feedback de résultat (tâche 17 : remplacé par un fondu)
 	void StartFeedback(const FBoardItemUseContext& Context, const TArray<ABoardNode*>& Nodes);
 	void OnFeedbackFinished();

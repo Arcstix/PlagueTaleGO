@@ -25,4 +25,13 @@ namespace AudioTags
 
 	// Défaite : le joueur est attrapé (2D, son court)
 	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Game_Defeat);
+
+	// Survol d'une case cliquable sans objet (2D, son court ; contexte : type de la case)
+	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(UI_HoverNode);
+
+	// Survol d'une case cliquable qui donne un objet : remplace UI_HoverNode (2D, son court ; contexte : type de l'objet)
+	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(UI_HoverItem);
+
+	// Utilisation d'un objet, sur la case du joueur (3D, son court ; contexte : type de l'objet)
+	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Use);
 }
