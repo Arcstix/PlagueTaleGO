@@ -29,6 +29,7 @@ L'équipe utilise l'app Claude, pas Claude Code : les CLAUDE.md ne sont **pas ch
 |---|---|
 | `/CLAUDE.md` | Ce fichier : projet, dépôt, assets, niveaux, git, glossaire |
 | `/Source/PlagueTaleGO/CLAUDE.md` | Architecture C++, invariants, normes de code, recettes, registre des entités |
+| `/Source/PlagueTaleGO/Audio/CLAUDE.md` | Système audio : architecture, invariants, recettes, registre des événements sonores |
 | `/Source/PlagueTaleGOEditor/CLAUDE.md` | Level Editor : données (`Level/`), outil (module éditeur), invariants, recettes d'extension, décisions |
 
 ## Plan du dépôt
@@ -52,6 +53,7 @@ PlagueTaleGO.uproject
 - **GD / LD** : peuvent créer et régler les **Data Assets de définition** (types de cases, d'entités, d'objets) utilisés par le Level Editor.
 - Les Blueprints sont des **sous-classes minces** des classes C++ (mesh, matériaux, valeurs de réglage). La logique de jeu reste en C++.
 - Conséquence : toute donnée qu'un LD doit régler est un `UPROPERTY(EditAnywhere)` commenté et rangé dans une catégorie claire (ex. `Board|Level`).
+- **Sons** : tout le monde peut en intégrer (bibliothèque `DA_AudioLibrary`, Sound Overrides des Data Assets, ambiance d'un niveau). Guide : document partagé « Guide audio — Plague Tale GO » (https://claude.ai/artifact/KmwHnSM7EVKp6SkPsw19jZ). Créer un nouvel événement sonore reste un travail de dev.
 
 ### Construire un niveau
 
@@ -65,6 +67,7 @@ Détails techniques, état d'avancement et recettes : `/Source/PlagueTaleGOEdito
    Niveau construit avant le Level Editor : le migrer d'abord avec la commande console `BoardEditor.ImportLegacy`.
 3. Placer une `CameraActor` avec le tag `BoardCamera`.
 4. Le décor est libre (hors Level Editor).
+5. Ambiance sonore : acteur **Ambient Sound** posé dans le niveau (guide audio, § « Ambiance d'un niveau »).
 
 Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par le Level Editor.
 
@@ -80,6 +83,10 @@ Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par 
 | `L_` | Niveaux (pas de préfixe pour l'instant) | `Levels/` |
 | `SM_` | Static Meshes | `StaticMesh/` |
 | `DA_` | Data Asset de définition du Level Editor (`DA_Node_`, `DA_Entity_`, `DA_Item_`) | `Data/Nodes/`, `Data/Entities/`, `Data/Items/` |
+| `SW_` / `MSS_` | Sound Wave / MetaSound Source (pas de Sound Cue) | `Audio/SFX/`, `Audio/Ambience/`, `Audio/Music/`, `Audio/UI/` |
+| `SC_` | Sound Class (catégorie de volume) | `Audio/Classes/` |
+| `ATT_` / `SCon_` | Sound Attenuation / Sound Concurrency | `Audio/Settings/` |
+| `DA_AudioLibrary` | Bibliothèque des sons (une seule) | `Audio/` |
 
 - Pour un nouveau type d'asset, suivre la convention UE usuelle (`SM_` Static Mesh, `T_` Texture, `WBP_` Widget, `NS_` Niagara…).
 - `Sandbox/` : tests et prototypes, ne jamais les référencer depuis un niveau ou une classe de production. Le Level Editor ignore les Data Assets de ce dossier.
@@ -115,6 +122,7 @@ Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par 
 | Intention | `FPlayerIntent` | Ce que le joueur veut faire (clic sur une case…), interprétée par l'état courant |
 | État | `UGameFlowState` | Une étape de la partie (tour joueur, tour ennemi, victoire…) |
 | Objet | `UBoardItem` | Objet posé sur une case (système pas encore conçu) |
+| Événement sonore | tag `Audio.*`, `UBoardAudioSubsystem` | Moment du jeu qui joue un son ; la bibliothèque `DA_AudioLibrary` dit lequel |
 
 ## Maintenance de ces fichiers
 

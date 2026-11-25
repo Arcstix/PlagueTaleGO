@@ -317,6 +317,12 @@ bool UBoardSubsystem::HasItemAt(const ABoardNode* Node) const
 	return Node && NodeItems.Contains(Node);
 }
 
+UBoardItemType* UBoardSubsystem::GetItemTypeAt(const ABoardNode* Node) const
+{
+	const FNodeArtefact* Item = Node ? NodeItems.Find(Node) : nullptr;
+	return Item ? Item->Type.Get() : nullptr;
+}
+
 UBoardItemType* UBoardSubsystem::ConsumeItemAt(ABoardNode* Node)
 {
 	FNodeArtefact* Item = Node ? NodeItems.Find(Node) : nullptr;

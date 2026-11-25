@@ -15,6 +15,10 @@
 #include "PlagueTaleGO/Items/BoardItem.h"
 #include "PlagueTaleGO/Board/BoardNode.h"
 #include "PlagueTaleGO/Level/Definitions/BoardItemType.h"
+#include "PlagueTaleGO/Audio/AudioTags.h"
+#include "PlagueTaleGO/Audio/BoardAudioSubsystem.h"
+// Include complet : convertir UBoardNodeType* en UBoardDefinition* (contexte audio) exige la classe complète
+#include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
 
 // ---------------------------------------------------------------------------
 // Cycle de vie
@@ -87,6 +91,33 @@ void UGameFlowSubsystem::SubmitHover(ABoardNode* Node)
 	if (CurrentState && CanPlayerAct())
 	{
 		CurrentState->HandleHover(Node);
+		PlayHoverSound(Node);
+	}
+}
+
+void UGameFlowSubsystem::PlayHoverSound(ABoardNode* Node) const
+{
+	// Case quittée (Node nul) ou case où le joueur ne peut rien faire : silence.
+	// IsNodeSelectable de l'état courant : voisines reliées pendant le déplacement, cases jaunes pendant le choix d'un objet.
+	if (!Node || !CurrentState || !CurrentState->IsNodeSelectable(Node))
+	{
+		return;
+	}
+	UBoardAudioSubsystem* Audio = UBoardAudioSubsystem::Get(this);
+	if (!Audio)
+	{
+		return;
+	}
+
+	// Case qui donne un objet : son propre au type d'objet. Sinon : son de la case, propre à son type.
+	const UBoardSubsystem* Board = GetBoard();
+	if (UBoardItemType* ItemType = Board ? Board->GetItemTypeAt(Node) : nullptr)
+	{
+		Audio->PlaySound2D(AudioTags::UI_HoverItem, ItemType);
+	}
+	if (Node->GetNodeType())
+	{
+		Audio->PlaySound2D(AudioTags::UI_HoverNode, Node->GetNodeType());
 	}
 }
 
@@ -200,6 +231,7 @@ void UGameFlowSubsystem::TryPickUpItem()
 
 	// L'objet appartient au chef d'orchestre jusqu'à son utilisation
 	PendingItem = NewObject<UBoardItem>(this, Type->ItemClass);
+	PendingItem->SetItemType(Type);
 
 	UE_LOG(LogPlagueTaleGO, Log, TEXT("[GameFlow] Objet pris sur %s : %s"),
 		*GetNameSafe(Node), *GetNameSafe(PendingItem));

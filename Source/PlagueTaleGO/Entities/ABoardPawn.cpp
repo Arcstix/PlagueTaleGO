@@ -4,6 +4,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "PlagueTaleGO/Board/BoardSubsystem.h"
+#include "PlagueTaleGO/Audio/BoardAudioSubsystem.h"
+// Include complet : convertir UBoardNodeType* en UBoardDefinition* (contexte audio) exige la classe complète
+#include "PlagueTaleGO/Level/Definitions/BoardNodeType.h"
 
 ABoardPawn::ABoardPawn()
 {
@@ -47,6 +50,7 @@ void ABoardPawn::BeginMove(ABoardNode* InTargetNode)
 	State = EBoardPawnState::Moving;
 
 	SetActorTickEnabled(true);
+	PlayMoveSound(TargetNode);
 }
 
 ABoardNode* ABoardPawn::GetCurrentNode() const
@@ -117,4 +121,18 @@ void ABoardPawn::CompleteMove()
 
 	SetActorTickEnabled(false);
 	OnMoveFinished.Broadcast(this);
+}
+
+void ABoardPawn::PlayMoveSound(const ABoardNode* DestinationNode) const
+{
+	if (!MoveSoundEvent.IsValid())
+	{
+		return;
+	}
+	if (UBoardAudioSubsystem* Audio = UBoardAudioSubsystem::Get(this))
+	{
+		// Le type de la case de destination sert de contexte : DA_Node_Wood peut remplacer le son par un pas sur du bois.
+		// Son joué à la position de départ : en 3D, il ne suit pas le pion pendant le déplacement (court, sans effet audible).
+		Audio->PlaySoundAtLocation(MoveSoundEvent, GetActorLocation(), DestinationNode ? DestinationNode->GetNodeType() : nullptr);
+	}
 }

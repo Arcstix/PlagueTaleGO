@@ -4,6 +4,9 @@
 #include "Engine/DataAsset.h"
 // Include complet : tester ou lire SettingsClass appelle UBoardPlacementSettings::StaticClass()
 #include "PlagueTaleGO/Level/BoardPlacementSettings.h"
+// Include complet : TMap<…, FBoardSoundEntry> stocke la struct elle-même (pas un pointeur)
+#include "PlagueTaleGO/Audio/BoardSoundEntry.h"
+#include "GameplayTagContainer.h"
 #include "BoardDefinition.generated.h"
 
 class UTexture2D;
@@ -62,4 +65,12 @@ public:
 	// Vide = aucun réglage. Voir UBoardPlacementSettings.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level Editor", meta = (ToolTip = "Settings specific to each element placed with this type (e.g. an enemy patrol). Empty = no settings."))
 	TSubclassOf<UBoardPlacementSettings> SettingsClass;
+
+	// --- Audio ---
+
+	// Sons propres à ce type, qui remplacent ceux de la bibliothèque (DA_AudioLibrary) pour le même événement.
+	// Ex. sur DA_Node_Wood : Audio.Player.Footstep → pas sur du bois. Événement absent = son de la bibliothèque.
+	// Utilisé seulement si le code passe ce type en « contexte » à UBoardAudioSubsystem (voir le registre des événements).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio", meta = (Categories = "Audio", ToolTip = "Sounds specific to this type, replacing the library sounds (DA_AudioLibrary) for the same event. Missing event = library sound."))
+	TMap<FGameplayTag, FBoardSoundEntry> SoundOverrides;
 };

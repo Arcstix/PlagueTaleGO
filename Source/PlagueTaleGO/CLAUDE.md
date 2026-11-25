@@ -6,7 +6,9 @@
 
 ```
 PlagueTaleGO.h/.cpp     Module + catégorie de log LogPlagueTaleGO
-PlagueTaleGO.Build.cs   Dépendances : Core, CoreUObject, Engine, InputCore, EnhancedInput, GameplayTags (+ UnrealEd en éditeur)
+PlagueTaleGO.Build.cs   Dépendances : Core, CoreUObject, Engine, InputCore, EnhancedInput, GameplayTags, DeveloperSettings (+ UnrealEd en éditeur)
+Audio/                  Sons : UBoardAudioSubsystem (seul lecteur), UBoardAudioLibrary (tag Audio.* → son), tags Audio.*.
+                        Documenté dans Audio/CLAUDE.md (avec le registre des événements sonores)
 Board/                  Plateau : ABoard (grille, porte le layout, traits des liens), ABoardNode (case générée),
                         UBoardSubsystem (graphe, occupation, validation des déplacements, FindPath),
                         BoardTypes.h (FBoardLink, EBoardDirection), BoardTags.h (Gameplay Tags Board.Node.*)
@@ -60,6 +62,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 7. **Un seul `ABoard` et un seul départ joueur par niveau.** Le pion joueur est identifié par `Cast<APlayerPawn>`.
 8. **Le code éditeur (`ABoard`, `ABoardNode`, `Level/`) ne dépend pas des subsystems** : `UGameFlowSubsystem` n'existe qu'en Game/PIE, et le graphe de `UBoardSubsystem` n'est construit qu'au lancement de la partie.
 9. **Le layout du `ABoard` est la source de vérité du plateau** et seul le Level Editor l'écrit. Les `ABoardNode` sont générées ; une règle de jeu liée à une case se teste par comportement (`HasBehavior(BoardTags::…)`), jamais par nom d'asset ni par classe. Voir les invariants du Level Editor dans `/Source/PlagueTaleGOEditor/CLAUDE.md`.
+10. **Un son de gameplay passe toujours par `UBoardAudioSubsystem`**, avec un tag `Audio.*` : jamais de `USoundBase*` en dur ni de `UGameplayStatics::PlaySound*` dans le gameplay. Voir `Audio/CLAUDE.md`.
 
 ## Normes C++
 
@@ -78,7 +81,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 - `meta = (ClampMin = "...")` sur les valeurs numériques réglables.
 - Getters : `UFUNCTION(BlueprintPure)` + `const`, définis directement dans le `.h`.
 
-**Catégories** (sans accents) : `Board`, `Board|Level` (données du layout), `Board|Grid`, `Board|Grid Preview`, `Board|Visuals`, `Board|Edition` (boutons `CallInEditor`), `GameFlow`, `Input`, `Camera`. Data Assets du Level Editor : `Level Editor` (présentation dans l'outil), `Node`, `Node|Visuals`, `Entity`, `Item`. Validation : `Validation`.
+**Catégories** (sans accents) : `Board`, `Board|Level` (données du layout), `Board|Grid`, `Board|Grid Preview`, `Board|Visuals`, `Board|Edition` (boutons `CallInEditor`), `GameFlow`, `Input`, `Camera`, `Board|Audio` (réglages audio d'un acteur). Data Assets du Level Editor : `Level Editor` (présentation dans l'outil), `Node`, `Node|Visuals`, `Entity`, `Item`, `Audio` (Sound Overrides). Audio : `Audio`, `Audio|Advanced`, `Audio|Defaults`. Validation : `Validation`.
 
 **Data Assets** : leurs propriétés sont `EditAnywhere` (un Data Asset est une instance : `EditDefaultsOnly` les rendrait non modifiables).
 
@@ -91,7 +94,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 - nouveau fichier : commencer directement par `#pragma once` / les includes (pas de texte « Fill out your copyright notice »).
 
 **Logs** : toujours `UE_LOG(LogPlagueTaleGO, <Niveau>, TEXT("[Tag] message en français"))`.
-- tags existants : `[Board]`, `[GameFlow]`, `[GameMode]`, `[Controller]`, `[PlayerMove]`, `[Validation]`.
+- tags existants : `[Board]`, `[GameFlow]`, `[GameMode]`, `[Controller]`, `[PlayerMove]`, `[Validation]`, `[Audio]`.
 - module éditeur : `UE_LOG(LogBoardEditor, …, TEXT("[BoardEditor] …"))` (`LogPlagueTaleGO` n'est pas exportée).
 - `Error` : niveau mal construit ou situation impossible. `Warning` : anormal mais récupérable. `Log` : événement important (changement d'état, spawn). `Verbose` : détail de debug.
 
@@ -118,6 +121,8 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 
 **Ajouter un objet** : le système d'objets n'est pas encore conçu. En discuter avec l'équipe avant d'implémenter.
 
+**Ajouter un son, un événement sonore** : voir `Audio/CLAUDE.md`, § Recettes.
+
 ## Registre des entités, objets et états
 
 > ⚠️ **Agent : quand une entité, un objet ou un état est ajouté, modifié ou supprimé pendant la session, mettre ce registre à jour dans le même changement.** Les mécaniques ne sont pas figées : indiquer le statut (prototype, validé par les GD…).
@@ -127,8 +132,8 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 **Pions**
 | Classe | Fichier | BP | Statut |
 |---|---|---|---|
-| `ABoardPawn` | `Entities/ABoardPawn.h` | — | Base abstraite : occupation, déplacement en lerp (`MoveDuration`), `OnMoveFinished`, `ApplyPlacementSettings` (vide) |
-| `APlayerPawn` | `Entities/Player/APlayerPawn.h` | `BP_PlayerPawn` | Vide : sert à identifier le joueur |
+| `ABoardPawn` | `Entities/ABoardPawn.h` | — | Base abstraite : occupation, déplacement en lerp (`MoveDuration`), `OnMoveFinished`, `ApplyPlacementSettings` (vide), `EntityType` (type qui l'a créé, renseigné avant `BeginPlay`), `MoveSoundEvent` (son au début d'un déplacement, réglé dans le BP) |
+| `APlayerPawn` | `Entities/Player/APlayerPawn.h` | `BP_PlayerPawn` | Vide : sert à identifier le joueur. `MoveSoundEvent` = `Audio.Player.Footstep` dans le BP |
 
 Aucun ennemi en C++. Des assets de prototype (`Sandbox/BP_WormTest`, `MI_Worm`, `M_SpawnWormNode`) existent sans classe C++ correspondante sur `develop`.
 
