@@ -200,6 +200,7 @@ void UGameFlowSubsystem::TryPickUpItem()
 
 	// L'objet appartient au chef d'orchestre jusqu'à son utilisation
 	PendingItem = NewObject<UBoardItem>(this, Type->ItemClass);
+	PendingItem->SetItemType(Type);
 
 	UE_LOG(LogPlagueTaleGO, Log, TEXT("[GameFlow] Objet pris sur %s : %s"),
 		*GetNameSafe(Node), *GetNameSafe(PendingItem));

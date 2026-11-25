@@ -14,7 +14,7 @@
 #include "Sound/SoundConcurrency.h"
 
 // ---------------------------------------------------------------------------
-// Lifecycle
+// Cycle de vie
 // ---------------------------------------------------------------------------
 UBoardAudioSubsystem* UBoardAudioSubsystem::Get(const UObject* WorldContextObject)
 {
@@ -31,7 +31,7 @@ void UBoardAudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	// GetDefault: the class "default object", which holds the values read from DefaultGame.ini
+	// GetDefault : l'objet « par défaut » de la classe, qui porte les valeurs lues dans DefaultGame.ini
 	const UBoardAudioSettings* Settings = GetDefault<UBoardAudioSettings>();
 	Library = Settings ? Settings->Library.LoadSynchronous() : nullptr;
 
@@ -42,7 +42,7 @@ void UBoardAudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 }
 
 // ---------------------------------------------------------------------------
-// One-shots
+// Sons courts
 // ---------------------------------------------------------------------------
 void UBoardAudioSubsystem::PlaySound2D(FGameplayTag Event, const UBoardDefinition* Context)
 {
@@ -76,7 +76,7 @@ void UBoardAudioSubsystem::PlaySoundAtLocation(FGameplayTag Event, FVector Locat
 }
 
 // ---------------------------------------------------------------------------
-// Loops
+// Boucles
 // ---------------------------------------------------------------------------
 UAudioComponent* UBoardAudioSubsystem::StartLoop2D(FGameplayTag Event, const UBoardDefinition* Context)
 {
@@ -90,8 +90,8 @@ UAudioComponent* UBoardAudioSubsystem::StartLoop2D(FGameplayTag Event, const UBo
 	{
 		return nullptr;
 	}
-	// Spawn* (unlike Play*) returns the audio component: it is what allows stopping the loop.
-	// bAutoDestroy = true: the component destroys itself once the sound is stopped.
+	// Spawn* (contrairement à Play*) renvoie le composant audio : c'est lui qui permet d'arrêter la boucle.
+	// bAutoDestroy = true : le composant se détruit seul une fois le son arrêté.
 	return RegisterLoop(UGameplayStatics::SpawnSound2D(this, Sound, Entry->VolumeMultiplier, Entry->PickPitch(), 0.f,
 		Entry->Concurrency, /*bPersistAcrossLevelTransition*/ false, /*bAutoDestroy*/ true));
 }
@@ -129,7 +129,7 @@ UAudioComponent* UBoardAudioSubsystem::StartLoopAttached(FGameplayTag Event, USc
 	{
 		return nullptr;
 	}
-	// bStopWhenAttachedToDestroyed = true: the loop stops by itself when the pawn disappears
+	// bStopWhenAttachedToDestroyed = true : la boucle s'arrête d'elle-même quand le pion disparaît
 	return RegisterLoop(UGameplayStatics::SpawnSoundAttached(Sound, AttachTo, NAME_None, FVector::ZeroVector, FRotator::ZeroRotator,
 		EAttachLocation::KeepRelativeOffset, /*bStopWhenAttachedToDestroyed*/ true, Entry->VolumeMultiplier, Entry->PickPitch(), 0.f,
 		ResolveAttenuation(*Entry, Sound), Entry->Concurrency, /*bAutoDestroy*/ true));
@@ -145,7 +145,7 @@ void UBoardAudioSubsystem::StopLoop(UAudioComponent* Loop, float FadeOutDuration
 
 	if (FadeOutDuration > 0.f)
 	{
-		// FadeOut lowers the volume down to FadeVolumeLevel (0), then stops the sound
+		// FadeOut baisse le volume jusqu'à FadeVolumeLevel (0) puis arrête le son
 		Loop->FadeOut(FadeOutDuration, 0.f);
 	}
 	else
@@ -156,7 +156,7 @@ void UBoardAudioSubsystem::StopLoop(UAudioComponent* Loop, float FadeOutDuration
 
 void UBoardAudioSubsystem::StopAllLoops(float FadeOutDuration)
 {
-	// Copy: StopLoop removes each loop from ActiveLoops during the iteration
+	// Copie : StopLoop retire chaque boucle de ActiveLoops pendant le parcours
 	const TArray<TWeakObjectPtr<UAudioComponent>> Loops = ActiveLoops;
 	for (const TWeakObjectPtr<UAudioComponent>& Loop : Loops)
 	{
@@ -166,7 +166,7 @@ void UBoardAudioSubsystem::StopAllLoops(float FadeOutDuration)
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Outils internes
 // ---------------------------------------------------------------------------
 const FBoardSoundEntry* UBoardAudioSubsystem::FindEntry(FGameplayTag Event, const UBoardDefinition* Context)
 {
@@ -176,7 +176,7 @@ const FBoardSoundEntry* UBoardAudioSubsystem::FindEntry(FGameplayTag Event, cons
 		return nullptr;
 	}
 
-	// 1. Content-specific variant (e.g. footstep on a wooden cell)
+	// 1. Variante propre au contenu (ex. pas sur une case en bois)
 	if (Context)
 	{
 		const FBoardSoundEntry* Override = Context->SoundOverrides.Find(Event);
@@ -186,13 +186,13 @@ const FBoardSoundEntry* UBoardAudioSubsystem::FindEntry(FGameplayTag Event, cons
 		}
 	}
 
-	// 2. Default sound from the library
+	// 2. Son par défaut de la bibliothèque
 	if (const FBoardSoundEntry* Entry = Library ? Library->FindEntry(Event) : nullptr)
 	{
 		return Entry;
 	}
 
-	// 3. No sound: expected until the sound has been integrated. The game goes on silently.
+	// 3. Aucun son : normal tant que le son n'a pas été intégré. Le jeu continue en silence.
 	WarnOnce(Event.ToString(), FString::Printf(TEXT("[Audio] Aucun son pour %s : l'ajouter dans DA_AudioLibrary."), *Event.ToString()));
 	return nullptr;
 }
@@ -205,7 +205,7 @@ USoundBase* UBoardAudioSubsystem::PickSound(const FBoardSoundEntry& Entry, FGame
 		return nullptr;
 	}
 
-	// A looping sound started with Play* could never be stopped (no reference to it): refuse it.
+	// Un son en boucle lancé avec Play* ne pourrait jamais être arrêté (aucune référence) : on refuse.
 	if (!bExpectLoop && Sound->IsLooping())
 	{
 		WarnOnce(Event.ToString() + TEXT("|Loop"), FString::Printf(
@@ -213,7 +213,7 @@ USoundBase* UBoardAudioSubsystem::PickSound(const FBoardSoundEntry& Entry, FGame
 			*Event.ToString(), *Sound->GetName()));
 		return nullptr;
 	}
-	// The opposite is harmless: the sound will play once
+	// L'inverse est sans danger : le son sera joué une seule fois
 	if (bExpectLoop && !Sound->IsLooping())
 	{
 		WarnOnce(Event.ToString() + TEXT("|NotLoop"), FString::Printf(
@@ -231,17 +231,17 @@ USoundAttenuation* UBoardAudioSubsystem::ResolveAttenuation(const FBoardSoundEnt
 	}
 	if (Sound && Sound->AttenuationSettings)
 	{
-		return nullptr;   // nullptr = the engine uses the sound asset's attenuation
+		return nullptr;   // nullptr = le moteur utilise l'atténuation de l'asset son
 	}
 	return Library ? Library->DefaultAttenuation.Get() : nullptr;
 }
 
 UAudioComponent* UBoardAudioSubsystem::RegisterLoop(UAudioComponent* Loop)
 {
-	// Loop can be null: sound rejected by its Concurrency, or audio disabled (-nosound)
+	// Loop peut être nul : son refusé par sa Concurrency, ou audio désactivé (-nosound)
 	if (Loop)
 	{
-		// Clean up loops already destroyed, then add
+		// Ménage des boucles déjà détruites, puis ajout
 		ActiveLoops.RemoveAll([](const TWeakObjectPtr<UAudioComponent>& Item) { return !Item.IsValid(); });
 		ActiveLoops.Add(Loop);
 	}

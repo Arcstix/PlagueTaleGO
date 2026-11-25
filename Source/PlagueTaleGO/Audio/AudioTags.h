@@ -3,25 +3,26 @@
 #include "NativeGameplayTags.h"
 
 /**
- * Native Gameplay Tags for sound events: one tag = one game moment that plays a sound.
+ * Gameplay Tags « natifs » des événements sonores : un tag = un moment du jeu qui joue un son.
  *
- * Gameplay code never references a sound directly: it asks UBoardAudioSubsystem to "play Audio.Player.Footstep",
- * and the library (DA_AudioLibrary) decides which sound to play.
- * Godot equivalent: the SOUND_EFFECT_TYPE enum of the AudioManager, but hierarchical
- * (Audio.Player.*, Audio.Game.*) and offered as a dropdown in the editor.
+ * Le code ne connaît jamais un son directement : il demande « joue Audio.Player.Footstep »
+ * à UBoardAudioSubsystem, et c'est la bibliothèque (DA_AudioLibrary) qui dit quel son jouer.
+ * Équivalent Godot : l'enum SOUND_EFFECT_TYPE de l'AudioManager, mais hiérarchique
+ * (Audio.Player.*, Audio.Game.*) et proposé en liste déroulante dans l'éditeur.
  *
- * - Adding an event: UE_DECLARE here + UE_DEFINE in AudioTags.cpp, call the subsystem where the event happens,
- *   then add it to the sound event registry (Source/PlagueTaleGO/Audio/CLAUDE.md).
- * - A tag with no sound in the library breaks nothing: one [Audio] warning, then silence.
+ * - Ajouter un événement : UE_DECLARE ici + UE_DEFINE dans AudioTags.cpp, appeler le subsystem
+ *   là où l'événement a lieu, puis l'ajouter au registre des événements (Source/PlagueTaleGO/Audio/CLAUDE.md).
+ * - Un tag sans son dans la bibliothèque ne casse rien : warning [Audio] une fois, puis silence.
  */
 namespace AudioTags
 {
-	// Player footstep when arriving on a cell (3D, one-shot; context: cell type)
+	// Pas du joueur au début de chaque déplacement (3D, son court ; contexte : type de la case de destination).
+	// Joué via ABoardPawn::MoveSoundEvent, réglé dans BP_PlayerPawn
 	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Player_Footstep);
 
-	// Victory: the player reaches an exit (2D, one-shot)
+	// Victoire : le joueur atteint une sortie (2D, son court)
 	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Game_Victory);
 
-	// Defeat: the player is caught (2D, one-shot)
+	// Défaite : le joueur est attrapé (2D, son court)
 	PLAGUETALEGO_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Game_Defeat);
 }

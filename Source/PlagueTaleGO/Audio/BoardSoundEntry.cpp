@@ -15,7 +15,7 @@ bool FBoardSoundEntry::HasSound() const
 
 USoundBase* FBoardSoundEntry::PickRandomSound() const
 {
-	// Skip empty slots in the list (common mistake when adding a row)
+	// On ignore les cases vides de la liste (oubli fréquent quand on ajoute une ligne)
 	TArray<USoundBase*, TInlineAllocator<8>> Valid;
 	for (const TObjectPtr<USoundBase>& Sound : Sounds)
 	{
@@ -33,6 +33,6 @@ USoundBase* FBoardSoundEntry::PickRandomSound() const
 
 float FBoardSoundEntry::PickPitch() const
 {
-	// Lower bound: below it, the engine cuts or distorts the sound
+	// Plancher : en dessous, le moteur coupe ou déforme le son
 	return FMath::Max(0.2f, PitchMultiplier + FMath::FRandRange(-PitchRandomness, PitchRandomness));
 }

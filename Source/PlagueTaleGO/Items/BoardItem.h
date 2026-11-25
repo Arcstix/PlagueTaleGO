@@ -10,6 +10,7 @@
 class ABoardNode;
 class ABoardPawn;
 class UBoardSubsystem;
+class UBoardItemType;
 
 // Ce que l'objet attend du joueur au moment de l'utiliser
 UENUM(BlueprintType)
@@ -75,6 +76,16 @@ class PLAGUETALEGO_API UBoardItem : public UObject
 	GENERATED_BODY()
 
 public:
+	// --- Type ---
+
+	// Type d'objet (Data Asset du Level Editor) d'où vient cet objet. nullptr si l'objet a été créé autrement.
+	// Sert notamment de « contexte » audio : sons propres au type (UBoardDefinition::SoundOverrides).
+	UFUNCTION(BlueprintPure, Category = "Item")
+	UBoardItemType* GetItemType() const { return ItemType; }
+
+	// Appelé par UGameFlowSubsystem au ramassage, juste après la création de l'objet
+	void SetItemType(UBoardItemType* InItemType) { ItemType = InItemType; }
+
 	// --- Ciblage ---
 
 	// Ce que le joueur doit choisir avant l'utilisation
@@ -118,6 +129,10 @@ public:
 	FLinearColor GetHoverColor() const { return HoverColor; }
 	
 protected:
+	// Type d'objet d'où vient cet objet (voir GetItemType)
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Item")
+	TObjectPtr<UBoardItemType> ItemType;
+
 	// Fixé dans le constructeur de chaque objet concret (pas modifiable dans un BP : c'est la nature de l'objet)
 	UPROPERTY(VisibleDefaultsOnly, Category = "Item")
 	EBoardItemTargeting Targeting = EBoardItemTargeting::None;

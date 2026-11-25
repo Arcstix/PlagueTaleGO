@@ -121,6 +121,7 @@ void ABoardGameMode::SpawnEntity(const FBoardCell& Cell, const FBoardEntityPlace
 	}
 
 	Pawn->ApplyPlacementSettings(Placement.Settings);
+	Pawn->SetEntityType(Placement.Type);
 	Pawn->FinishSpawning(SpawnTransform);
 
 	// Place le pion et l'enregistre dans UBoardSubsystem

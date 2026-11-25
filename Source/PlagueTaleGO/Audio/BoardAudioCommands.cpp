@@ -6,12 +6,12 @@
 #include "HAL/IConsoleManager.h"     // FAutoConsoleCommandWithWorldAndArgs
 
 /**
- * Audio test console commands: listen to a library sound without wiring any gameplay.
- * In PIE, open the game console (² key on AZERTY, ` on QWERTY); Tab completes the name.
+ * Commandes console de test de l'audio : écouter un son de la bibliothèque sans brancher de gameplay.
+ * En PIE, ouvrir la console du jeu (touche ² en AZERTY, ` en QWERTY) ; Tab complète le nom.
  *
- * FAutoConsoleCommandWithWorldAndArgs: global object that registers the command when the module loads;
- * "WithWorld": the engine passes the world where the command is typed (the game world in PIE).
- * Stripped from the final game (UE_BUILD_SHIPPING).
+ * FAutoConsoleCommandWithWorldAndArgs : objet global qui enregistre la commande au chargement du module ;
+ * « WithWorld » : le moteur passe le monde où la commande est tapée (celui de la partie en PIE).
+ * Retirées du jeu final (UE_BUILD_SHIPPING).
  */
 #if !UE_BUILD_SHIPPING
 namespace
@@ -40,7 +40,7 @@ namespace
 			return;
 		}
 
-		// false: no blocking error if the tag does not exist, an invalid tag is returned instead
+		// false : pas d'erreur bloquante si le tag n'existe pas, on renvoie un tag invalide
 		const FGameplayTag Event = FGameplayTag::RequestGameplayTag(FName(*Args[0]), false);
 		if (!Event.IsValid())
 		{
@@ -56,7 +56,7 @@ namespace
 			bLoop |= Args[Index].Equals(TEXT("Loop"), ESearchCase::IgnoreCase);
 		}
 
-		// 3D sound: played on the player pawn, to hear the spatialization while moving the camera
+		// Son 3D : joué sur le pion joueur, pour entendre la spatialisation en bougeant la caméra
 		const UGameFlowSubsystem* GameFlow = World->GetSubsystem<UGameFlowSubsystem>();
 		APlayerPawn* Player = GameFlow ? GameFlow->GetPlayerPawn() : nullptr;
 		if (b3D && !Player)
@@ -100,12 +100,12 @@ namespace
 
 	FAutoConsoleCommandWithWorldAndArgs GPlayCommand(
 		TEXT("BoardAudio.Play"),
-		TEXT("Plays a sound event from the library. Usage: BoardAudio.Play <Tag> [3D] [Loop]. 3D: on the player pawn. Loop: looping sound."),
+		TEXT("Joue un événement sonore de la bibliothèque. Usage : BoardAudio.Play <Tag> [3D] [Loop]. 3D : sur le pion joueur. Loop : son en boucle."),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&PlayCommand));
 
 	FAutoConsoleCommandWithWorld GStopLoopsCommand(
 		TEXT("BoardAudio.StopLoops"),
-		TEXT("Stops every running loop (0.5 s fade out)."),
+		TEXT("Arrête toutes les boucles en cours (fondu de 0,5 s)."),
 		FConsoleCommandWithWorldDelegate::CreateStatic(&StopLoopsCommand));
 }
 #endif

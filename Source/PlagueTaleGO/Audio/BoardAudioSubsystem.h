@@ -14,21 +14,21 @@ class USoundBase;
 struct FBoardSoundEntry;
 
 /**
- * The game's sound player: the ONLY entry point for code to play a gameplay sound.
- * Godot equivalent: the AudioManager autoload. A World Subsystem is created and destroyed with the level:
- * no sound survives a level change (team decision: no continuous music).
+ * Le lecteur de sons du jeu : SEUL point d'entrée du code pour jouer un son de gameplay.
+ * Équivalent Godot : l'autoload AudioManager. Un World Subsystem est créé et détruit avec le niveau :
+ * aucun son ne survit à un changement de niveau (choix de l'équipe : pas de musique continue).
  *
- * Responsibilities:
- * - find the sound of an event (Audio.* tag): first in the context's SoundOverrides
- *   (cell / pawn / item type), otherwise in the library (UBoardAudioLibrary);
- * - play it in 2D or 3D, as a one-shot or a loop;
- * - keep track of loops so they can all be stopped (victory, defeat).
+ * Responsabilités :
+ * - trouver le son d'un événement (tag Audio.*) : d'abord dans les SoundOverrides du contexte
+ *   (type de case / de pion / d'objet), sinon dans la bibliothèque (UBoardAudioLibrary) ;
+ * - le jouer en 2D ou en 3D, en son court ou en boucle ;
+ * - garder la trace des boucles pour pouvoir toutes les arrêter (victoire, défaite).
  *
- * What it does NOT do, because the engine already does it (configured on the assets):
- * max simultaneous sounds (Sound Concurrency), volume categories (Sound Class),
- * audio component recycling, attenuation and spatialization (Sound Attenuation).
+ * Ce qu'il ne fait PAS, parce que le moteur le fait déjà (réglé sur les assets) :
+ * limite de sons simultanés (Sound Concurrency), catégories de volume (Sound Class),
+ * recyclage des composants audio, atténuation et spatialisation (Sound Attenuation).
  *
- * Usage from C++:
+ * Usage depuis le C++ :
  *   if (UBoardAudioSubsystem* Audio = UBoardAudioSubsystem::Get(this))
  *   {
  *       Audio->PlaySoundAtLocation(AudioTags::Player_Footstep, GetActorLocation(), Node->GetNodeType());
@@ -40,70 +40,70 @@ class PLAGUETALEGO_API UBoardAudioSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-	// Shortcut: the subsystem of this object's world (nullptr in the editor outside PIE)
+	// Raccourci : le subsystem du monde de cet objet (nullptr dans l'éditeur hors PIE)
 	static UBoardAudioSubsystem* Get(const UObject* WorldContextObject);
 
-	// Only created in game and PIE (not in the editor or previews)
+	// Créé seulement en jeu et en PIE (pas dans l'éditeur ni les aperçus)
 	virtual bool DoesSupportWorldType(const EWorldType::Type WorldType) const override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	// --- One-shots (fire and forget: the engine releases the sound by itself when it ends) ---
+	// --- Sons courts (lancés puis oubliés : le moteur libère tout seul le son à la fin) ---
 
-	// Non-spatialized sound (UI, victory...): same volume whatever the camera
+	// Son non spatialisé (interface, victoire…) : même volume quelle que soit la caméra
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void PlaySound2D(FGameplayTag Event, const UBoardDefinition* Context = nullptr);
 
-	// Spatialized sound at a world location (footstep, impact...)
+	// Son spatialisé à une position du monde (pas, impact…)
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void PlaySoundAtLocation(FGameplayTag Event, FVector Location, const UBoardDefinition* Context = nullptr);
 
-	// --- Loops (return the audio component: keep it in a UPROPERTY to stop the loop) ---
+	// --- Boucles (renvoient le composant audio : le garder dans un UPROPERTY pour l'arrêter) ---
 
-	// Non-spatialized loop (ambience, music)
+	// Boucle non spatialisée (ambiance, musique)
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	UAudioComponent* StartLoop2D(FGameplayTag Event, const UBoardDefinition* Context = nullptr);
 
-	// Static spatialized loop. For a scenery sound, prefer an "Ambient Sound" actor placed in the level.
+	// Boucle spatialisée immobile. Pour un son de décor, préférer un acteur « Ambient Sound » posé dans le niveau.
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	UAudioComponent* StartLoopAtLocation(FGameplayTag Event, FVector Location, const UBoardDefinition* Context = nullptr);
 
-	// Spatialized loop that follows a component (pawn...) and stops by itself if it is destroyed
+	// Boucle spatialisée qui suit un composant (pion…) et s'arrête toute seule s'il est détruit
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	UAudioComponent* StartLoopAttached(FGameplayTag Event, USceneComponent* AttachTo, const UBoardDefinition* Context = nullptr);
 
-	// Stops a loop, with a fade out (0 = hard cut). No effect if Loop is null or already stopped.
+	// Arrête une boucle, avec un fondu (0 = coupure nette). Sans effet si Loop est nul ou déjà arrêtée.
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void StopLoop(UAudioComponent* Loop, float FadeOutDuration = 0.5f);
 
-	// Stops every loop started by this subsystem (victory, defeat...)
+	// Arrête toutes les boucles lancées par ce subsystem (victoire, défaite…)
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void StopAllLoops(float FadeOutDuration = 0.5f);
 
 private:
-	// Entry to play: context's SoundOverrides, otherwise library. nullptr (+ one warning per tag) if none.
+	// Entrée à jouer : SoundOverrides du contexte, sinon bibliothèque. nullptr (+ warning une fois par tag) si aucune.
 	const FBoardSoundEntry* FindEntry(FGameplayTag Event, const UBoardDefinition* Context);
 
-	// Picks the sound to play and checks the loop / one-shot rule. nullptr if nothing must be played.
+	// Tire le son à jouer et vérifie la règle boucle / son court. nullptr si on ne doit rien jouer.
 	USoundBase* PickSound(const FBoardSoundEntry& Entry, FGameplayTag Event, bool bExpectLoop);
 
-	// Attenuation of a 3D sound: the entry's, otherwise the asset's (nullptr = the engine reads it), otherwise the default one
+	// Atténuation d'un son 3D : celle de l'entrée, sinon celle de l'asset (nullptr = le moteur la lit), sinon celle par défaut
 	USoundAttenuation* ResolveAttenuation(const FBoardSoundEntry& Entry, const USoundBase* Sound) const;
 
-	// Remembers a loop (for StopAllLoops) and returns it
+	// Mémorise une boucle (pour StopAllLoops) et la renvoie
 	UAudioComponent* RegisterLoop(UAudioComponent* Loop);
 
-	// Warning shown only once per key (avoids flooding the log on every footstep)
+	// Warning affiché une seule fois par clé (évite d'inonder le log à chaque pas)
 	void WarnOnce(const FString& Key, const FString& Message);
 
-	// --- Data ---
+	// --- Données ---
 
-	// Library loaded from the Project Settings (UBoardAudioSettings)
+	// Bibliothèque chargée depuis les Project Settings (UBoardAudioSettings)
 	UPROPERTY()
 	TObjectPtr<UBoardAudioLibrary> Library;
 
-	// Running loops. Weak: an audio component destroys itself once its loop is stopped.
+	// Boucles en cours. Faibles (weak) : un composant audio se détruit seul quand sa boucle est arrêtée.
 	TArray<TWeakObjectPtr<UAudioComponent>> ActiveLoops;
 
-	// Keys of the warnings already shown
+	// Clés des warnings déjà affichés
 	TSet<FString> ReportedWarnings;
 };

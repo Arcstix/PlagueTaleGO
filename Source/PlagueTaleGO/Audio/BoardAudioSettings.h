@@ -7,11 +7,11 @@
 class UBoardAudioLibrary;
 
 /**
- * Project audio settings, shown in Project Settings > Game > Board Audio.
+ * Réglages audio du projet, affichés dans Project Settings > Game > Board Audio.
  *
- * UDeveloperSettings: a class whose "Config" properties automatically appear
- * in the Project Settings and are saved in Config/DefaultGame.ini (DefaultConfig).
- * Godot equivalent: declaring an autoload in Project Settings, without writing code.
+ * UDeveloperSettings : une classe dont les propriétés « Config » apparaissent automatiquement
+ * dans les Project Settings et sont enregistrées dans Config/DefaultGame.ini (DefaultConfig).
+ * Équivalent Godot : déclarer un autoload dans Project Settings, sans écrire de code.
  */
 UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Board Audio"))
 class PLAGUETALEGO_API UBoardAudioSettings : public UDeveloperSettings
@@ -21,8 +21,8 @@ class PLAGUETALEGO_API UBoardAudioSettings : public UDeveloperSettings
 public:
 	UBoardAudioSettings();
 
-	// Sound library used by UBoardAudioSubsystem.
-	// "Soft" reference (a path): required for a Config property, the asset is loaded when the level starts.
+	// Bibliothèque de sons utilisée par UBoardAudioSubsystem.
+	// Référence « soft » (un chemin) : obligatoire pour une propriété Config, l'asset est chargé au lancement du niveau.
 	UPROPERTY(Config, EditAnywhere, Category = "Audio", meta = (ToolTip = "Sound library used by the game (DA_AudioLibrary)."))
 	TSoftObjectPtr<UBoardAudioLibrary> Library;
 };
