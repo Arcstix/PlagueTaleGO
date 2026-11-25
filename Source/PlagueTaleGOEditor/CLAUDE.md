@@ -165,7 +165,7 @@ UBoardSubsystem (graphe = acteurs + Layout.Links)    ABoardGameMode (pions = Lay
 
 | Classe | Champs propres | Utilisé par |
 |---|---|---|
-| `UBoardDefinition` (base) | `DisplayName`, `Description` (aide), `EditorColor`, `Icon`, `SortOrder`, `SettingsClass` | Palette du Level Editor |
+| `UBoardDefinition` (base) | `DisplayName`, `Description` (aide), `EditorColor`, `Icon`, `SortOrder`, `SettingsClass`, `SoundOverrides` | Palette du Level Editor ; `SoundOverrides` : sons propres au type (`/Source/PlagueTaleGO/Audio/CLAUDE.md`) |
 | `UBoardNodeType` | `Behaviors` (tags `Board.Node.*`), `NodeClass`, `Mesh`, `MaterialOverrides`, `MeshScale` | `ABoardNode` (visuel, `HasBehavior`) |
 | `UBoardEntityType` | `PawnClass` ; `IsPlayer()` si dérivé de `APlayerPawn` | `ABoardGameMode` (spawn) |
 | `UBoardItemType` | `ItemClass` | (futur système d'objets) |
