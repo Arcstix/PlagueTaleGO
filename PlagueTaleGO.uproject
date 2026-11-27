@@ -21,6 +21,10 @@
 	],
 	"Plugins": [
 		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
 			"TargetAllowList": [

@@ -9,6 +9,7 @@ class ABoardNode;
 class ABoardPawn;
 class UBoardSubsystem;
 class UBlueDustTrailComponent;
+class ABlueDustVisual;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBlueDustTraceAdded, const FBlueDustTrace&, Trace);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlueDustTraceRemoved, const FBlueDustTrace&, Trace, EBlueDustRemovalReason, Reason);
@@ -75,9 +76,9 @@ public:
 
 	/**
 	 * Case suivante pour remonter la trace vers le propriétaire, à partir d'une case tracée :
-	 * la trace un cran plus récente, ou la case du propriétaire pour la plus récente (N-1).
-	 * nullptr si Node ne porte pas de trace.
-	 * Attention : la case renvoyée n'est pas forcément voisine (trace retirée au milieu) : passer par FindPath.
+	 * la case par laquelle il est reparti (FBlueDustTrace::ExitNode). Toujours une voisine reliée :
+	 * la suivre de proche en proche refait son vrai chemin jusqu'à lui. nullptr si Node ne porte pas de trace.
+	 * La case renvoyée ne porte pas forcément de trace (ex. case du propriétaire, ou trace déjà retirée).
 	 */
 	UFUNCTION(BlueprintPure, Category = "BlueDust")
 	ABoardNode* GetNextTowardOwner(const ABoardNode* Node) const;
@@ -163,12 +164,19 @@ protected:
 		ToolTip = "Number of owner moves a trace stays on its cell (2 = traces on the last two cells left). 0 = no trace."))
 	int32 TrailLength = 2;
 
+	// Visuel créé sur chaque trace : segment de sa case vers la case suivante du chemin (BP enfant de ABlueDustVisual, avec son Niagara).
+	// Vide = aucun visuel (debug seulement).
+	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Visuals", meta = (
+		ToolTip = "Visual spawned on each trace: a segment from its cell to the next cell of the player's path (Blueprint child of BlueDustVisual, holding the Niagara effect). Empty = no visual."))
+	TSubclassOf<ABlueDustVisual> TraceClass;
+
 	// --- Debug ---
 
 	// Dessine les traces (sphère + durée de vie restante) dans le viewport. Jamais dans le build Shipping.
+	// Aussi activable en jeu : commande console BlueDust.Debug.
 	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Debug", meta = (
-		ToolTip = "Draws each trace (sphere + remaining lifetime) in the viewport. Never in Shipping builds."))
-	bool bDrawDebug = true;
+		ToolTip = "Draws each trace (sphere + remaining lifetime) in the viewport. Never in Shipping builds. Also toggled in game with the console command BlueDust.Debug."))
+	bool bDrawDebug = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Debug", meta = (ClampMin = "1.0", EditCondition = "bDrawDebug",
 		ToolTip = "Radius of the debug sphere drawn on each trace."))
@@ -188,6 +196,11 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Category = "BlueDust")
 	TArray<TWeakObjectPtr<UObject>> EmissionBlockers;
 
+	// Visuel (segment) de chaque trace actuelle. Un visuel retiré quitte la table et se détruit seul après s'être défait.
+	// Pointeurs faibles : par sécurité, si un visuel est détruit par ailleurs.
+	UPROPERTY(VisibleInstanceOnly, Transient, Category = "BlueDust|Visuals")
+	TMap<TObjectPtr<ABoardNode>, TWeakObjectPtr<ABlueDustVisual>> TraceVisuals;
+
 private:
 	// Réponse à UBoardSubsystem::OnPawnMoved : applique les règles si le pion est le propriétaire
 	UFUNCTION()
@@ -196,14 +209,34 @@ private:
 	// 1. Retire 1 de durée de vie à chaque trace, supprime celles qui tombent à 0
 	void AgeTraces();
 
-	// 3. Pose une trace sur Node (ou la rafraîchit si la case en porte déjà une)
-	void LeaveTrace(ABoardNode* Node);
+	// 3. Pose une trace sur Node, avec la case vers laquelle le propriétaire repart (ou la rafraîchit si la case en porte déjà une)
+	void LeaveTrace(ABoardNode* Node, ABoardNode* ExitNode);
 
 	// Supprime la trace de Node s'il y en a une, et diffuse OnTraceRemoved. Faux si la case n'avait pas de trace.
 	bool RemoveTraceInternal(const ABoardNode* Node, EBlueDustRemovalReason Reason);
 
 	// Supprime toutes les traces avec la raison donnée. Faux s'il n'y en avait aucune.
 	bool ClearTrailInternal(EBlueDustRemovalReason Reason);
+
+	// --- Diffusion (seuls endroits qui diffusent les délégués et pilotent les visuels) ---
+
+	// Une trace vient d'être posée : son segment commence à se construire, puis OnTraceAdded
+	void NotifyTraceAdded(const FBlueDustTrace& Trace);
+
+	// Une trace vient d'être retirée : son segment se défait (ou s'efface d'un coup selon la raison), puis OnTraceRemoved
+	void NotifyTraceRemoved(const FBlueDustTrace& Trace, EBlueDustRemovalReason Reason);
+
+	// Fin d'un ensemble de modifications : paramètres des visuels, puis OnTrailUpdated
+	void NotifyTrailUpdated();
+
+	// Crée le visuel (segment) d'une trace et lance sa construction. Sans TraceClass : rien.
+	void SpawnVisual(const FBlueDustTrace& Trace);
+
+	// Durée d'un déplacement du propriétaire : la queue de la trace recule à la même vitesse que la tête avance
+	float GetOwnerMoveDuration() const;
+
+	// Détruit immédiatement tous les visuels (fin de partie du propriétaire)
+	void DestroyAllVisuals();
 
 	// Index de la trace de Node dans Traces, ou INDEX_NONE
 	int32 FindTraceIndex(const ABoardNode* Node) const;
@@ -217,6 +250,10 @@ private:
 
 	// Dernier état diffusé par OnEmissionBlockedChanged
 	bool bWasEmissionBlocked = false;
+
+	// Case quittée pendant le traitement de HandlePawnMoved (nullptr en dehors) : choisit le sens dans lequel
+	// le segment d'une trace retirée sous le propriétaire se défait
+	ABoardNode* CurrentMoveFrom = nullptr;
 
 	// Plateau auquel on est abonné (gardé pour se désabonner proprement dans EndPlay)
 	TWeakObjectPtr<UBoardSubsystem> BoardSubsystem;

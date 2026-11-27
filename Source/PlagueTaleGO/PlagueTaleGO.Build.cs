@@ -12,7 +12,8 @@ public class PlagueTaleGO : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags" });
 
 		// DeveloperSettings : UBoardAudioSettings (page « Board Audio » des Project Settings)
-		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings" });
+		// Niagara : ABlueDustTrace (visuel de la poussière bleue). Plugin Niagara actif par défaut dans UE5
+		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings", "Niagara" });
 		
 		if (Target.bBuildEditor) { PrivateDependencyModuleNames.Add("UnrealEd"); }
 

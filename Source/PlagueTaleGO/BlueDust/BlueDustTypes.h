@@ -33,6 +33,12 @@ struct PLAGUETALEGO_API FBlueDustTrace
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "BlueDust")
 	TObjectPtr<ABoardNode> Node = nullptr;
 
+	// Case vers laquelle le propriétaire est reparti en quittant Node : toujours une voisine reliée.
+	// Suivre les ExitNode de proche en proche refait le vrai chemin du propriétaire jusqu'à lui.
+	// Le visuel dessine le segment Node → ExitNode.
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "BlueDust")
+	TObjectPtr<ABoardNode> ExitNode = nullptr;
+
 	// Déplacements restants avant disparition (TrailLength à la pose, puis -1 à chaque déplacement du propriétaire)
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "BlueDust")
 	int32 RemainingLifetime = 0;

@@ -1,4 +1,5 @@
 ﻿#include "BlueDustTrailComponent.h"
+#include "BlueDustVisual.h"
 
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
@@ -48,6 +49,14 @@ void UBlueDustTrailComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		Board->OnPawnMoved.RemoveDynamic(this, &UBlueDustTrailComponent::HandlePawnMoved);
 	}
 	BoardSubsystem.Reset();
+
+	// Propriétaire détruit en cours de partie : ses visuels disparaissent avec lui.
+	// Fin de niveau : le monde détruit déjà tous les acteurs, on oublie seulement les pointeurs.
+	if (EndPlayReason == EEndPlayReason::Destroyed)
+	{
+		DestroyAllVisuals();
+	}
+	TraceVisuals.Reset();
 	Traces.Reset();
 
 	// Se désabonner de la destruction des acteurs bloqueurs encore vivants
@@ -83,6 +92,12 @@ void UBlueDustTrailComponent::TickComponent(float DeltaTime, ELevelTick TickType
 		}
 		const FVector Location = Trace.Node->GetActorLocation() + FVector(0.f, 0.f, DebugRadius);
 		DrawDebugSphere(World, Location, DebugRadius, 12, DebugColor, false, 0.f, 0, 2.f);
+		if (Trace.ExitNode)
+		{
+			// Segment de la trace : vers la case par laquelle le propriétaire est reparti
+			const FVector ExitLocation = Trace.ExitNode->GetActorLocation() + FVector(0.f, 0.f, DebugRadius);
+			DrawDebugLine(World, Location, ExitLocation, DebugColor, false, 0.f, 0, 3.f);
+		}
 		DrawDebugString(World, Location + FVector(0.f, 0.f, DebugRadius * 1.5f),
 			FString::FromInt(Trace.RemainingLifetime), nullptr, FColor::White, 0.f, true);
 	}
@@ -103,15 +118,18 @@ void UBlueDustTrailComponent::HandlePawnMoved(ABoardPawn* Pawn, ABoardNode* From
 	// Filet de sécurité : oublie les bloqueurs détruits sans passer par OnDestroyed (ex. un UObject non acteur)
 	RefreshBlockedState();
 
+	CurrentMoveFrom = FromNode;
+
 	// L'ordre compte : vieillir d'abord, sinon la nouvelle trace perdrait 1 dès sa pose
 	AgeTraces();
 	RemoveTraceInternal(ToNode, EBlueDustRemovalReason::OwnerReturned);
 	if (!IsEmissionBlocked())
 	{
-		LeaveTrace(FromNode);
+		LeaveTrace(FromNode, ToNode);
 	}
 
-	OnTrailUpdated.Broadcast(this);
+	CurrentMoveFrom = nullptr;
+	NotifyTrailUpdated();
 }
 
 void UBlueDustTrailComponent::AgeTraces()
@@ -125,12 +143,12 @@ void UBlueDustTrailComponent::AgeTraces()
 			const FBlueDustTrace Expired = Traces[Index];   // copie : l'élément disparaît du tableau juste après
 			Traces.RemoveAt(Index);
 			UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[BlueDust] Trace expirée sur %s"), *GetNameSafe(Expired.Node));
-			OnTraceRemoved.Broadcast(Expired, EBlueDustRemovalReason::Expired);
+			NotifyTraceRemoved(Expired, EBlueDustRemovalReason::Expired);
 		}
 	}
 }
 
-void UBlueDustTrailComponent::LeaveTrace(ABoardNode* Node)
+void UBlueDustTrailComponent::LeaveTrace(ABoardNode* Node, ABoardNode* ExitNode)
 {
 	if (!Node || TrailLength <= 0)
 	{
@@ -144,19 +162,29 @@ void UBlueDustTrailComponent::LeaveTrace(ABoardNode* Node)
 	{
 		FBlueDustTrace Refreshed = Traces[Existing];
 		Refreshed.RemainingLifetime = TrailLength;
+		Refreshed.ExitNode = ExitNode;
 		Traces.RemoveAt(Existing);
 		Traces.Insert(Refreshed, 0);
 		UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[BlueDust] Trace rafraîchie sur %s"), *GetNameSafe(Node));
+
+		// Le segment a changé de direction : l'ancien s'efface, le nouveau se construit
+		TWeakObjectPtr<ABlueDustVisual> OldVisual;
+		if (TraceVisuals.RemoveAndCopyValue(Node, OldVisual) && OldVisual.IsValid())
+		{
+			OldVisual->FadeOut(EBlueDustRemovalReason::Removed);
+		}
+		SpawnVisual(Refreshed);
 		return;
 	}
 
 	FBlueDustTrace NewTrace;
 	NewTrace.Node = Node;
+	NewTrace.ExitNode = ExitNode;
 	NewTrace.RemainingLifetime = TrailLength;
 	Traces.Insert(NewTrace, 0);   // index 0 = la plus récente (N-1)
 
 	UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[BlueDust] Trace posée sur %s (durée %d)"), *GetNameSafe(Node), TrailLength);
-	OnTraceAdded.Broadcast(NewTrace);
+	NotifyTraceAdded(NewTrace);
 }
 
 bool UBlueDustTrailComponent::RemoveTraceInternal(const ABoardNode* Node, EBlueDustRemovalReason Reason)
@@ -171,7 +199,7 @@ bool UBlueDustTrailComponent::RemoveTraceInternal(const ABoardNode* Node, EBlueD
 	Traces.RemoveAt(Index);
 	UE_LOG(LogPlagueTaleGO, Verbose, TEXT("[BlueDust] Trace retirée sur %s (%s)"),
 		*GetNameSafe(Removed.Node), *UEnum::GetValueAsString(Reason));
-	OnTraceRemoved.Broadcast(Removed, Reason);
+	NotifyTraceRemoved(Removed, Reason);
 	return true;
 }
 
@@ -187,10 +215,113 @@ bool UBlueDustTrailComponent::ClearTrailInternal(EBlueDustRemovalReason Reason)
 	Traces.Reset();
 	for (const FBlueDustTrace& Trace : Removed)
 	{
-		OnTraceRemoved.Broadcast(Trace, Reason);
+		NotifyTraceRemoved(Trace, Reason);
 	}
 	UE_LOG(LogPlagueTaleGO, Log, TEXT("[BlueDust] %d trace(s) retirée(s) (%s)"), Removed.Num(), *UEnum::GetValueAsString(Reason));
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Diffusion et visuels
+// ---------------------------------------------------------------------------
+void UBlueDustTrailComponent::NotifyTraceAdded(const FBlueDustTrace& Trace)
+{
+	SpawnVisual(Trace);
+	OnTraceAdded.Broadcast(Trace);
+}
+
+void UBlueDustTrailComponent::SpawnVisual(const FBlueDustTrace& Trace)
+{
+	UWorld* World = GetWorld();
+	if (!TraceClass || !World || !Trace.Node)
+	{
+		return;
+	}
+
+	// Un visuel qui disparaît encore sur cette case n'est pas réutilisé : son segment allait ailleurs.
+	// Il finit son fondu seul ; le nouveau prend sa place dans TraceVisuals.
+	FActorSpawnParameters Params;
+	Params.Owner = GetOwner();
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	// Sans rotation : le visuel travaille en espace monde (extrémités du segment calculées en coordonnées monde)
+	ABlueDustVisual* Visual = World->SpawnActor<ABlueDustVisual>(TraceClass, Trace.Node->GetActorLocation(), FRotator::ZeroRotator, Params);
+	if (!Visual)
+	{
+		return;
+	}
+	TraceVisuals.Add(Trace.Node, Visual);
+	Visual->BeginSegment(Trace, Cast<ABoardPawn>(GetOwner()));
+}
+
+void UBlueDustTrailComponent::NotifyTraceRemoved(const FBlueDustTrace& Trace, EBlueDustRemovalReason Reason)
+{
+	// Le visuel quitte TraceVisuals tout de suite : il se défait puis se détruit seul
+	TWeakObjectPtr<ABlueDustVisual> WeakVisual;
+	TraceVisuals.RemoveAndCopyValue(Trace.Node, WeakVisual);
+	if (ABlueDustVisual* Visual = WeakVisual.Get())
+	{
+		switch (Reason)
+		{
+		case EBlueDustRemovalReason::Expired:
+			// Queue de la trace : le début du segment avance vers ExitNode, au rythme du propriétaire
+			Visual->Retract(Reason, false, GetOwnerMoveDuration());
+			break;
+
+		case EBlueDustRemovalReason::OwnerReturned:
+			// Propriétaire qui revient par ce segment (ExitNode == case qu'il quitte) : la fin du segment le suit
+			// et le segment est « mangé » sous ses pas. Sinon (boucle) : il se défait comme une queue.
+			Visual->Retract(Reason, Trace.ExitNode == CurrentMoveFrom, GetOwnerMoveDuration());
+			break;
+
+		default:
+			// Statue, ClearTrail, RemoveTraceAt : effacé d'un coup, en fondu
+			Visual->FadeOut(Reason);
+			break;
+		}
+	}
+
+	OnTraceRemoved.Broadcast(Trace, Reason);
+}
+
+float UBlueDustTrailComponent::GetOwnerMoveDuration() const
+{
+	const ABoardPawn* OwnerPawn = Cast<ABoardPawn>(GetOwner());
+	return OwnerPawn ? OwnerPawn->GetMoveDuration() : 0.4f;
+}
+
+void UBlueDustTrailComponent::NotifyTrailUpdated()
+{
+	// Oublie les visuels détruits à la fin de leur fondu
+	for (auto It = TraceVisuals.CreateIterator(); It; ++It)
+	{
+		if (!It->Value.IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
+
+	// Âge de chaque trace transmis à son visuel (paramètre LifetimeRatio du Niagara : 1 = trace neuve)
+	for (const FBlueDustTrace& Trace : Traces)
+	{
+		if (ABlueDustVisual* Visual = TraceVisuals.FindRef(Trace.Node).Get())
+		{
+			Visual->SetLifetimeRatio(TrailLength > 0 ? static_cast<float>(Trace.RemainingLifetime) / TrailLength : 0.f);
+		}
+	}
+
+	OnTrailUpdated.Broadcast(this);
+}
+
+void UBlueDustTrailComponent::DestroyAllVisuals()
+{
+	for (const TPair<TObjectPtr<ABoardNode>, TWeakObjectPtr<ABlueDustVisual>>& Pair : TraceVisuals)
+	{
+		if (ABlueDustVisual* Visual = Pair.Value.Get())
+		{
+			Visual->Destroy();
+		}
+	}
+	TraceVisuals.Reset();
 }
 
 int32 UBlueDustTrailComponent::FindTraceIndex(const ABoardNode* Node) const
@@ -227,18 +358,7 @@ TArray<FBlueDustTrace> UBlueDustTrailComponent::FindTracesIn(const TArray<ABoard
 ABoardNode* UBlueDustTrailComponent::GetNextTowardOwner(const ABoardNode* Node) const
 {
 	const int32 Index = FindTraceIndex(Node);
-	if (Index == INDEX_NONE)
-	{
-		return nullptr;
-	}
-	if (Index > 0)
-	{
-		return Traces[Index - 1].Node;   // un cran plus récent
-	}
-
-	// La plus récente (N-1) mène au propriétaire lui-même
-	const ABoardPawn* OwnerPawn = Cast<ABoardPawn>(GetOwner());
-	return OwnerPawn ? OwnerPawn->GetCurrentNode() : nullptr;
+	return Index != INDEX_NONE ? Traces[Index].ExitNode.Get() : nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -250,7 +370,7 @@ bool UBlueDustTrailComponent::RemoveTraceAt(ABoardNode* Node)
 	{
 		return false;
 	}
-	OnTrailUpdated.Broadcast(this);
+	NotifyTrailUpdated();
 	return true;
 }
 
@@ -258,7 +378,7 @@ void UBlueDustTrailComponent::ClearTrail()
 {
 	if (ClearTrailInternal(EBlueDustRemovalReason::Cleared))
 	{
-		OnTrailUpdated.Broadcast(this);
+		NotifyTrailUpdated();
 	}
 }
 
@@ -284,7 +404,7 @@ void UBlueDustTrailComponent::SetTrailLength(int32 NewLength)
 	}
 	if (bChanged)
 	{
-		OnTrailUpdated.Broadcast(this);
+		NotifyTrailUpdated();
 	}
 }
 
@@ -303,7 +423,7 @@ void UBlueDustTrailComponent::SuppressTrail(UObject* Source)
 	AddEmissionBlocker(Source);
 	if (bCleared)
 	{
-		OnTrailUpdated.Broadcast(this);
+		NotifyTrailUpdated();
 	}
 }
 
@@ -397,8 +517,8 @@ void UBlueDustTrailComponent::DumpToLog() const
 	{
 		const FBlueDustTrace& Trace = Traces[Index];
 		const FIntPoint Coord = Trace.Node ? Trace.Node->GetGridCoord() : FIntPoint::ZeroValue;
-		UE_LOG(LogPlagueTaleGO, Log, TEXT("[BlueDust]   N-%d : %s (%d, %d), durée restante %d"),
-			Index + 1, *GetNameSafe(Trace.Node), Coord.X, Coord.Y, Trace.RemainingLifetime);
+		UE_LOG(LogPlagueTaleGO, Log, TEXT("[BlueDust]   N-%d : %s (%d, %d), durée restante %d, repart vers %s"),
+			Index + 1, *GetNameSafe(Trace.Node), Coord.X, Coord.Y, Trace.RemainingLifetime, *GetNameSafe(Trace.ExitNode));
 	}
 	for (const TWeakObjectPtr<UObject>& Blocker : EmissionBlockers)
 	{
