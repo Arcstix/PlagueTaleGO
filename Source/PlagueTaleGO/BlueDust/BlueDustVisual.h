@@ -94,6 +94,11 @@ protected:
 		ToolTip = "Height (Z) of the particle spawn box."))
 	float BoxThickness = 2.f;
 
+	// Hauteur au-dessus de la traînée jusqu'où les particules survivent au masque (cm) : doit dépasser la montée des particules
+	UPROPERTY(EditDefaultsOnly, Category = "BlueDust", meta = (ClampMin = "0.0", Units = "cm",
+		ToolTip = "Height above the trail up to which particles survive the mask (SegmentMaskSize). Must be higher than the rising particles go."))
+	float MaskHeight = 300.f;
+
 	// Durée du fondu final (s), après la déconstruction ou pour un effacement d'un coup
 	UPROPERTY(EditDefaultsOnly, Category = "BlueDust", meta = (ClampMin = "0.05", Units = "s",
 		ToolTip = "Duration of the final fade (after unbuilding, or when the trace is wiped at once). The actor is destroyed at the end."))
@@ -115,6 +120,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Niagara Parameters", meta = (
 		ToolTip = "Niagara User parameter (Vector): world-aligned size of the spawn box (Box Size input of a Box Shape Location). None = not sent."))
 	FName BoxSizeParameter = TEXT("SegmentBoxSize");
+
+	// Vector : taille du masque, même empreinte au sol que la boîte d'apparition mais haute (2 × MaskHeight).
+	// À brancher sur un « Kill Particles in Volume » qui tue À L'EXTÉRIEUR : dévoilement / retrait progressifs avec le segment.
+	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Niagara Parameters", meta = (
+		ToolTip = "Niagara User parameter (Vector): mask size, same ground footprint as the spawn box but tall (2 x Mask Height). Plug it into a Kill Particles in Volume that kills OUTSIDE the box: particles are revealed and removed along with the segment. None = not sent."))
+	FName MaskSizeParameter = TEXT("SegmentMaskSize");
 
 	// Float : longueur actuelle du segment (cm), ex. pour régler le nombre de particules
 	UPROPERTY(EditDefaultsOnly, Category = "BlueDust|Niagara Parameters", meta = (

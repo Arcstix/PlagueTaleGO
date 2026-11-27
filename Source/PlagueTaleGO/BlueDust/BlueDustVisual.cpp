@@ -215,9 +215,15 @@ void ABlueDustVisual::PushParameters()
 	// Boîte alignée sur les axes monde autour du segment. Les liens sont orthogonaux : elle colle au segment.
 	// Elle déborde de BoxWidth / 2 à chaque extrémité, ce qui remplit les virages.
 	const FVector Delta = CurrentEnd - CurrentStart;
+	const FVector Footprint(FMath::Abs(Delta.X) + BoxWidth, FMath::Abs(Delta.Y) + BoxWidth, 0.f);
 	if (!BoxSizeParameter.IsNone())
 	{
-		Effect->SetVariableVec3(BoxSizeParameter, FVector(FMath::Abs(Delta.X) + BoxWidth, FMath::Abs(Delta.Y) + BoxWidth, BoxThickness));
+		Effect->SetVariableVec3(BoxSizeParameter, FVector(Footprint.X, Footprint.Y, BoxThickness));
+	}
+	if (!MaskSizeParameter.IsNone())
+	{
+		// Boîte centrée sur le système (hauteur de la traînée) : 2 × MaskHeight pour couvrir MaskHeight au-dessus
+		Effect->SetVariableVec3(MaskSizeParameter, FVector(Footprint.X, Footprint.Y, 2.f * MaskHeight));
 	}
 	if (!SegmentLengthParameter.IsNone())
 	{
