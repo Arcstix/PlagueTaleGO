@@ -6,9 +6,11 @@
 
 ```
 PlagueTaleGO.h/.cpp     Module + catégorie de log LogPlagueTaleGO
-PlagueTaleGO.Build.cs   Dépendances : Core, CoreUObject, Engine, InputCore, EnhancedInput, GameplayTags, DeveloperSettings (+ UnrealEd en éditeur)
+PlagueTaleGO.Build.cs   Dépendances : Core, CoreUObject, Engine, InputCore, EnhancedInput, GameplayTags, DeveloperSettings, Niagara (+ UnrealEd en éditeur)
 Audio/                  Sons : UBoardAudioSubsystem (seul lecteur), UBoardAudioLibrary (tag Audio.* → son), tags Audio.*.
                         Documenté dans Audio/CLAUDE.md (avec le registre des événements sonores)
+BlueDust/               Poussière bleue : UBlueDustTrailComponent (traces du joueur, API pour les ennemis),
+                        ABlueDustVisual (segment Niagara). Documenté dans BlueDust/CLAUDE.md
 Board/                  Plateau : ABoard (grille, porte le layout, traits des liens), ABoardNode (case générée),
                         UBoardSubsystem (graphe, occupation, validation des déplacements, FindPath),
                         BoardTypes.h (FBoardLink, EBoardDirection), BoardTags.h (Gameplay Tags Board.Node.*)
@@ -16,7 +18,8 @@ Level/                  Données du Level Editor : FBoardLayout, définitions (D
                         Documenté dans /Source/PlagueTaleGOEditor/CLAUDE.md
 Turns/                  Déroulé de la partie : UGameFlowSubsystem (chef d'orchestre), UGameFlowState (base),
                         GameFlowType.h (FPlayerIntent), States/ (un fichier par état)
-Entities/               Pions : ABoardPawn (base abstraite), Player/APlayerPawn
+Entities/               Pions : ABoardPawn (base abstraite), Player/APlayerPawn (+ UPlayerPlacementSettings),
+                        Statue/AWormPawn (le Ver, malgré le nom du dossier)
 Player/                 ABoardPlayerController (entrées souris → intentions). Ne pas confondre avec Entities/Player/
 Core/                   ABoardGameMode (fait apparaître les pions, lance la partie)
 Items/                  UBoardItem (base abstraite, vide pour l'instant)
@@ -36,7 +39,7 @@ Ajouter une dépendance de module : `PlagueTaleGO.Build.cs`, puis régénérer l
 Clic → ABoardPlayerController (CanPlayerAct ?) → FPlayerIntent
      → UGameFlowSubsystem::SubmitPlayerIntent → état courant::HandleIntent
      → APlayerPawn::RequestMove → UBoardSubsystem::TryMovePawn (valide + met à jour l'occupation)
-     → ABoardPawn::BeginMove (lerp) → OnMoveFinished → état::Finish()
+     → ABoardPawn::BeginMove (lerp) + UBoardSubsystem::OnPawnMoved (poussière bleue…) → OnMoveFinished → état::Finish()
      → UGameFlowSubsystem::DecideNextState
 ```
 
@@ -63,6 +66,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 8. **Le code éditeur (`ABoard`, `ABoardNode`, `Level/`) ne dépend pas des subsystems** : `UGameFlowSubsystem` n'existe qu'en Game/PIE, et le graphe de `UBoardSubsystem` n'est construit qu'au lancement de la partie.
 9. **Le layout du `ABoard` est la source de vérité du plateau** et seul le Level Editor l'écrit. Les `ABoardNode` sont générées ; une règle de jeu liée à une case se teste par comportement (`HasBehavior(BoardTags::…)`), jamais par nom d'asset ni par classe. Voir les invariants du Level Editor dans `/Source/PlagueTaleGOEditor/CLAUDE.md`.
 10. **Un son de gameplay passe toujours par `UBoardAudioSubsystem`**, avec un tag `Audio.*` : jamais de `USoundBase*` en dur ni de `UGameplayStatics::PlaySound*` dans le gameplay. Voir `Audio/CLAUDE.md`.
+11. **La poussière bleue se lit et se modifie uniquement par `UBlueDustTrailComponent`** (`APlayerPawn::GetBlueDustTrail()`), jamais par ses visuels. Voir `BlueDust/CLAUDE.md`.
 
 ## Normes C++
 
@@ -81,7 +85,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 - `meta = (ClampMin = "...")` sur les valeurs numériques réglables.
 - Getters : `UFUNCTION(BlueprintPure)` + `const`, définis directement dans le `.h`.
 
-**Catégories** (sans accents) : `Board`, `Board|Level` (données du layout), `Board|Grid`, `Board|Grid Preview`, `Board|Visuals`, `Board|Edition` (boutons `CallInEditor`), `GameFlow`, `Input`, `Camera`, `Board|Audio` (réglages audio d'un acteur). Data Assets du Level Editor : `Level Editor` (présentation dans l'outil), `Node`, `Node|Visuals`, `Entity`, `Item`, `Audio` (Sound Overrides). Audio : `Audio`, `Audio|Advanced`, `Audio|Defaults`. Validation : `Validation`.
+**Catégories** (sans accents) : `Board`, `Board|Level` (données du layout), `Board|Grid`, `Board|Grid Preview`, `Board|Visuals`, `Board|Edition` (boutons `CallInEditor`), `GameFlow`, `Input`, `Camera`, `Board|Audio` (réglages audio d'un acteur). Data Assets du Level Editor : `Level Editor` (présentation dans l'outil), `Node`, `Node|Visuals`, `Entity`, `Item`, `Audio` (Sound Overrides). Audio : `Audio`, `Audio|Advanced`, `Audio|Defaults`. Poussière bleue : `BlueDust`, `BlueDust|Visuals`, `BlueDust|Debug`, `BlueDust|Niagara Parameters`. Validation : `Validation`.
 
 **Data Assets** : leurs propriétés sont `EditAnywhere` (un Data Asset est une instance : `EditDefaultsOnly` les rendrait non modifiables).
 
@@ -94,7 +98,7 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 - nouveau fichier : commencer directement par `#pragma once` / les includes (pas de texte « Fill out your copyright notice »).
 
 **Logs** : toujours `UE_LOG(LogPlagueTaleGO, <Niveau>, TEXT("[Tag] message en français"))`.
-- tags existants : `[Board]`, `[GameFlow]`, `[GameMode]`, `[Controller]`, `[PlayerMove]`, `[Validation]`, `[Audio]`.
+- tags existants : `[Board]`, `[GameFlow]`, `[GameMode]`, `[Controller]`, `[PlayerMove]`, `[Validation]`, `[Audio]`, `[BlueDust]`.
 - module éditeur : `UE_LOG(LogBoardEditor, …, TEXT("[BoardEditor] …"))` (`LogPlagueTaleGO` n'est pas exportée).
 - `Error` : niveau mal construit ou situation impossible. `Warning` : anormal mais récupérable. `Log` : événement important (changement d'état, spawn). `Verbose` : détail de debug.
 
@@ -123,19 +127,20 @@ Victory, Defeat : terminaux (DecideNextState renvoie nullptr)
 
 **Ajouter un son, un événement sonore** : voir `Audio/CLAUDE.md`, § Recettes.
 
+**Faire réagir un élément à la poussière bleue** (Ver, Statue…) : voir `BlueDust/CLAUDE.md`, § API et Recettes.
+
 ## Registre des entités, objets et états
 
 > ⚠️ **Agent : quand une entité, un objet ou un état est ajouté, modifié ou supprimé pendant la session, mettre ce registre à jour dans le même changement.** Les mécaniques ne sont pas figées : indiquer le statut (prototype, validé par les GD…).
 
-État au 10/11/2026 :
+État au 10/11/2026, pions mis à jour le 27/11/2026 (poussière bleue) :
 
 **Pions**
 | Classe | Fichier | BP | Statut |
 |---|---|---|---|
-| `ABoardPawn` | `Entities/ABoardPawn.h` | — | Base abstraite : occupation, déplacement en lerp (`MoveDuration`), `OnMoveFinished`, `ApplyPlacementSettings` (vide), `EntityType` (type qui l'a créé, renseigné avant `BeginPlay`), `MoveSoundEvent` (son au début d'un déplacement, réglé dans le BP) |
-| `APlayerPawn` | `Entities/Player/APlayerPawn.h` | `BP_PlayerPawn` | Vide : sert à identifier le joueur. `MoveSoundEvent` = `Audio.Player.Footstep` dans le BP |
-
-Aucun ennemi en C++. Des assets de prototype (`Sandbox/BP_WormTest`, `MI_Worm`, `M_SpawnWormNode`) existent sans classe C++ correspondante sur `develop`.
+| `ABoardPawn` | `Entities/ABoardPawn.h` | — | Base abstraite : occupation, déplacement en lerp (`MoveDuration`), `OnMoveFinished`, `ApplyPlacementSettings` (vide), `EntityType` (type qui l'a créé, renseigné avant `BeginPlay`), `MoveSoundEvent` (son au début d'un déplacement, réglé dans le BP), `GetMoveDuration()` |
+| `APlayerPawn` | `Entities/Player/APlayerPawn.h` | `BP_PlayerPawn` | Identifie le joueur. Porte la poussière bleue (composant `BlueDustTrail`, `GetBlueDustTrail()`) ; réglages du niveau via `UPlayerPlacementSettings` (`DA_Entity_Player` > Settings Class). `MoveSoundEvent` = `Audio.Player.Footstep` dans le BP. Poussière bleue : prototype validé par les GD (27/11/2026) |
+| `AWormPawn` | `Entities/Statue/AWormPawn.h` | `BP_WormPawn` | Le Ver. Classe vide ; `UEnemyTurnState` le fait avancer d'une case vers le joueur. Prototype, à documenter par sa feature (détection de la poussière bleue : `BlueDust/CLAUDE.md`) |
 
 **Objets** : `UBoardItem` est une base abstraite vide. Aucun objet concret. Le layout peut contenir des objets (`FBoardCell::Items`, type `UBoardItemType`), mais rien ne les utilise en jeu : ramassage non implémenté, `PendingItem` jamais renseigné.
 
