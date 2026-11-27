@@ -19,7 +19,7 @@ L'équipe utilise l'app Claude, pas Claude Code : les CLAUDE.md ne sont **pas ch
 1. En début de tâche, lire ce fichier.
 2. Avant de lire ou modifier du code dans un dossier, lire le CLAUDE.md le plus proche (voir Index).
 3. Le dépôt est sur le PC du dev (dossier lié à la session) : modifier les fichiers sur place, jamais en les réécrivant de mémoire.
-4. Les fichiers source sont en **CRLF** : conserver les fins de ligne et l'encodage existants.
+4. Les fichiers source sont en **LF**, en UTF-8 (avec BOM pour la plupart des fichiers récents) : conserver les fins de ligne et l'encodage existants.
 5. Claude ne peut ni compiler ni lancer l'éditeur : à la fin d'une modification C++, dire ce qu'il faut vérifier (compilation, test en PIE, réglage d'un BP).
 6. Ne jamais committer ni pousser sans demande explicite.
 
@@ -30,6 +30,7 @@ L'équipe utilise l'app Claude, pas Claude Code : les CLAUDE.md ne sont **pas ch
 | `/CLAUDE.md` | Ce fichier : projet, dépôt, assets, niveaux, git, glossaire |
 | `/Source/PlagueTaleGO/CLAUDE.md` | Architecture C++, invariants, normes de code, recettes, registre des entités |
 | `/Source/PlagueTaleGO/Audio/CLAUDE.md` | Système audio : architecture, invariants, recettes, registre des événements sonores |
+| `/Source/PlagueTaleGO/BlueDust/CLAUDE.md` | Poussière bleue (traces du joueur) : règles, API pour le Ver et la Statue, contrat du Niagara, recettes |
 | `/Source/PlagueTaleGOEditor/CLAUDE.md` | Level Editor : données (`Level/`), outil (module éditeur), invariants, recettes d'extension, décisions |
 
 ## Plan du dépôt
@@ -87,6 +88,7 @@ Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par 
 | `SC_` | Sound Class (catégorie de volume) | `Audio/Classes/` |
 | `ATT_` / `SCon_` | Sound Attenuation / Sound Concurrency | `Audio/Settings/` |
 | `DA_AudioLibrary` | Bibliothèque des sons (une seule) | `Audio/` |
+| `NS_` | Niagara System | `FX/` |
 
 - Pour un nouveau type d'asset, suivre la convention UE usuelle (`SM_` Static Mesh, `T_` Texture, `WBP_` Widget, `NS_` Niagara…).
 - `Sandbox/` : tests et prototypes, ne jamais les référencer depuis un niveau ou une classe de production. Le Level Editor ignore les Data Assets de ce dossier.
@@ -123,6 +125,7 @@ Ne pas placer ni régler d'`ABoardNode` à la main : elles sont générées par 
 | État | `UGameFlowState` | Une étape de la partie (tour joueur, tour ennemi, victoire…) |
 | Objet | `UBoardItem` | Objet posé sur une case (système pas encore conçu) |
 | Événement sonore | tag `Audio.*`, `UBoardAudioSubsystem` | Moment du jeu qui joue un son ; la bibliothèque `DA_AudioLibrary` dit lequel |
+| Poussière bleue / trace | `UBlueDustTrailComponent`, `FBlueDustTrace` | Trace laissée par le joueur sur ses dernières cases (N-1, N-2…), lue par les ennemis |
 
 ## Maintenance de ces fichiers
 

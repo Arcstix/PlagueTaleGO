@@ -12,6 +12,10 @@ class ABoardPawn;
 class ABoardItemPickup;   
 class UBoardItemType;     
 
+// Un pion vient de quitter From pour To (déplacement accepté par TryMovePawn, au tout début de son animation).
+// Les téléportations (RegisterPawn au spawn) ne le déclenchent pas.
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnPawnMoved, ABoardPawn*, Pawn, ABoardNode*, FromNode, ABoardNode*, ToNode);
+
 // Un USTRUCT est nécessaire : UPROPERTY ne gère pas les conteneurs imbriqués
 USTRUCT()
 struct FNodeOccupants
@@ -85,8 +89,13 @@ public:
 	// Même vérification que TryMovePawn, sans rien déplacer (survol, clic, caméra…)
 	EMoveResult CanMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode) const;
 	
-	// Seule autorité : valide, met à jour l'occupation, lance le déplacement
+	// Seule autorité : valide, met à jour l'occupation, lance le déplacement, puis diffuse OnPawnMoved
 	EMoveResult TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetNode);
+
+	// Diffusé à chaque déplacement accepté, juste après le début de l'animation du pion.
+	// Sert aux systèmes qui réagissent au mouvement sans le contrôler (trace de poussière bleue…).
+	UPROPERTY(BlueprintAssignable, Category = "Board")
+	FOnPawnMoved OnPawnMoved;
 
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool IsOccupied(const ABoardNode* Node) const;

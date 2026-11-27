@@ -384,7 +384,13 @@ EMoveResult UBoardSubsystem::TryMovePawn(ABoardPawn* Pawn, ABoardNode* InTargetN
 		return Result;
 	}
 
+	// La case de départ n'est plus connue après SetPawnNode : on la garde pour OnPawnMoved
+	ABoardNode* FromNode = GetPawnNode(Pawn);
+
 	SetPawnNode(Pawn, InTargetNode);
 	Pawn->BeginMove(InTargetNode);
+
+	// Diffusé APRÈS la mise à jour de l'occupation : les abonnés voient le plateau dans son nouvel état
+	OnPawnMoved.Broadcast(Pawn, FromNode, InTargetNode);
 	return EMoveResult::Accepted;
 }

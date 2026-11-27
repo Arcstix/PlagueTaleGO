@@ -46,6 +46,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Board")
 	bool IsMoving() const { return State == EBoardPawnState::Moving; }
 
+	// Durée d'un déplacement d'une case (s). Sert à synchroniser des effets avec le pion (trace de poussière bleue…)
+	UFUNCTION(BlueprintPure, Category = "Board")
+	float GetMoveDuration() const { return MoveDuration; }
+
 	UFUNCTION(BlueprintPure, Category = "Board")
 	ABoardNode* GetCurrentNode() const;
 

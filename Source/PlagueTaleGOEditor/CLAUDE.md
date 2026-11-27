@@ -240,6 +240,9 @@ toujours être coloré automatiquement, en discuter avec les GD (ce serait une r
 4. Dans le mode « Board Editor », les réglages sont créés automatiquement quand on choisit le type d'une case, d'une
    entité ou d'un objet (section « Selected Cell »). Les placements déjà soumis les reçoivent à leur prochaine édition ;
    en attendant, gérer `Settings == nullptr` (valeurs par défaut).
+Exemple existant : `UPlayerPlacementSettings` (`Entities/Player/PlayerPlacementSettings.h`, choisi dans `DA_Entity_Player`) :
+durée de la poussière bleue par niveau. Réglage optionnel avec une case *Override* (`InlineEditConditionToggle` +
+`EditCondition`) : décochée, la valeur du BP du pion s'applique, et la changer met à jour tous les niveaux.
 
 **Ajouter ou modifier un geste de l'outil « Board »**
 1. Mettre à jour d'abord le tableau des gestes (§ 1) et le valider avec l'équipe.
