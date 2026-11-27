@@ -13,6 +13,7 @@ class UBlueDustTrailComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBlueDustTraceAdded, const FBlueDustTrace&, Trace);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBlueDustTraceRemoved, const FBlueDustTrace&, Trace, EBlueDustRemovalReason, Reason);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBlueDustTrailUpdated, UBlueDustTrailComponent*, Trail);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBlueDustEmissionBlockedChanged, bool, bBlocked);
 
 /**
  * Trace de poussière bleue laissée derrière son propriétaire (le joueur).
@@ -26,7 +27,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBlueDustTrailUpdated, UBlueDustTr
  *   2. si le propriétaire arrive sur une case tracée, cette trace disparaît (OwnerReturned) ;
  *   3. une trace de durée TrailLength est posée sur la case quittée ;
  * - une seule trace au maximum par case ;
- * - aucune trace au début du niveau (le spawn n'est pas un déplacement).
+ * - aucune trace au début du niveau (le spawn n'est pas un déplacement) ;
+ * - tant qu'au moins un « bloqueur » est actif (ex. une statue qui poursuit le joueur), aucune trace n'est posée.
+ *   Un bloqueur détruit libère son blocage de lui-même : la trace reprend au déplacement suivant.
  * Avec TrailLength = 2, les traces sont donc sur N-1 et N-2.
  *
  * Mécanisme UE : un UActorComponent est un « morceau de comportement » ajouté à un acteur,
@@ -52,6 +55,83 @@ public:
 	UFUNCTION(BlueprintPure, Category = "BlueDust")
 	TArray<FBlueDustTrace> GetTraces() const { return Traces; }
 
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	int32 GetTraceCount() const { return Traces.Num(); }
+
+	// --- Requêtes (pour les features qui lisent la trace : détection et poursuite du ver…) ---
+
+	// Vrai si la case porte une trace
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	bool HasTraceAt(const ABoardNode* Node) const { return FindTraceIndex(Node) != INDEX_NONE; }
+
+	// Déplacements restants avant que la trace de la case disparaisse. 0 = pas de trace.
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	int32 GetTraceLifetime(const ABoardNode* Node) const;
+
+	// Traces situées sur une des cases données (ex. zone de détection d'un ennemi),
+	// dans l'ordre de la trace : de la plus récente à la plus ancienne. Vide si aucune.
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	TArray<FBlueDustTrace> FindTracesIn(const TArray<ABoardNode*>& Nodes) const;
+
+	/**
+	 * Case suivante pour remonter la trace vers le propriétaire, à partir d'une case tracée :
+	 * la trace un cran plus récente, ou la case du propriétaire pour la plus récente (N-1).
+	 * nullptr si Node ne porte pas de trace.
+	 * Attention : la case renvoyée n'est pas forcément voisine (trace retirée au milieu) : passer par FindPath.
+	 */
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	ABoardNode* GetNextTowardOwner(const ABoardNode* Node) const;
+
+	// --- Modifications (pour les features qui agissent sur la trace) ---
+
+	// Retire la trace d'une case (raison Removed). Faux si la case n'avait pas de trace.
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	bool RemoveTraceAt(ABoardNode* Node);
+
+	// Retire toutes les traces (raison Cleared)
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	void ClearTrail();
+
+	/**
+	 * Change la durée de vie des traces (appelé avant BeginPlay par le réglage du niveau, ou par la commande console).
+	 * Les traces existantes sont raccourcies si besoin (jamais rallongées) ; 0 retire tout.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	void SetTrailLength(int32 NewLength);
+
+	// --- Blocage (ex. statue qui poursuit le joueur) ---
+
+	/**
+	 * Raccourci pour la statue : retire toutes les traces d'un coup (raison Suppressed) puis bloque l'émission
+	 * tant que Source existe ou jusqu'à RemoveEmissionBlocker(Source).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	void SuppressTrail(UObject* Source);
+
+	/**
+	 * Empêche de poser de nouvelles traces tant que Source est actif (les traces existantes continuent de vieillir).
+	 * Plusieurs bloqueurs peuvent se cumuler (plusieurs statues). Si Source est un acteur, sa destruction le retire automatiquement.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	void AddEmissionBlocker(UObject* Source);
+
+	// Retire le blocage posé par Source (sans effet s'il n'en avait pas)
+	UFUNCTION(BlueprintCallable, Category = "BlueDust")
+	void RemoveEmissionBlocker(UObject* Source);
+
+	// Vrai si au moins un bloqueur encore vivant empêche de poser des traces
+	UFUNCTION(BlueprintPure, Category = "BlueDust")
+	bool IsEmissionBlocked() const;
+
+	// --- Debug (commandes console BlueDust.*) ---
+
+	// Active ou coupe le dessin de debug en cours de partie (sans effet dans le build Shipping)
+	void SetDrawDebug(bool bEnabled);
+	bool IsDrawingDebug() const { return bDrawDebug; }
+
+	// Écrit les traces et les bloqueurs dans le log
+	void DumpToLog() const;
+
 	// --- Événements ---
 
 	// Une trace vient d'apparaître (au début du déplacement du propriétaire)
@@ -62,9 +142,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "BlueDust")
 	FOnBlueDustTraceRemoved OnTraceRemoved;
 
-	// Diffusé une fois toutes les modifications d'un déplacement appliquées (pratique pour un visuel qui relie les traces)
+	// Diffusé une fois un ensemble de modifications appliqué (déplacement, suppression, blocage…) :
+	// pratique pour un visuel qui relie les traces entre elles
 	UPROPERTY(BlueprintAssignable, Category = "BlueDust")
 	FOnBlueDustTrailUpdated OnTrailUpdated;
+
+	// L'émission vient d'être bloquée (true) ou débloquée (false)
+	UPROPERTY(BlueprintAssignable, Category = "BlueDust")
+	FOnBlueDustEmissionBlockedChanged OnEmissionBlockedChanged;
 
 protected:
 	virtual void BeginPlay() override;
@@ -99,6 +184,10 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Category = "BlueDust")
 	TArray<FBlueDustTrace> Traces;
 
+	// Objets qui bloquent l'émission. Pointeurs faibles : un bloqueur détruit ne bloque plus, et n'est pas gardé en vie.
+	UPROPERTY(VisibleInstanceOnly, Category = "BlueDust")
+	TArray<TWeakObjectPtr<UObject>> EmissionBlockers;
+
 private:
 	// Réponse à UBoardSubsystem::OnPawnMoved : applique les règles si le pion est le propriétaire
 	UFUNCTION()
@@ -113,8 +202,21 @@ private:
 	// Supprime la trace de Node s'il y en a une, et diffuse OnTraceRemoved. Faux si la case n'avait pas de trace.
 	bool RemoveTraceInternal(const ABoardNode* Node, EBlueDustRemovalReason Reason);
 
+	// Supprime toutes les traces avec la raison donnée. Faux s'il n'y en avait aucune.
+	bool ClearTrailInternal(EBlueDustRemovalReason Reason);
+
 	// Index de la trace de Node dans Traces, ou INDEX_NONE
 	int32 FindTraceIndex(const ABoardNode* Node) const;
+
+	// Un acteur bloqueur vient d'être détruit (AActor::OnDestroyed) : son blocage disparaît
+	UFUNCTION()
+	void HandleBlockerDestroyed(AActor* DestroyedActor);
+
+	// Retire les bloqueurs détruits, puis diffuse OnEmissionBlockedChanged si l'état a changé
+	void RefreshBlockedState();
+
+	// Dernier état diffusé par OnEmissionBlockedChanged
+	bool bWasEmissionBlocked = false;
 
 	// Plateau auquel on est abonné (gardé pour se désabonner proprement dans EndPlay)
 	TWeakObjectPtr<UBoardSubsystem> BoardSubsystem;

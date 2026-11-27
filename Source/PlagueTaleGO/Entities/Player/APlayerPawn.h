@@ -21,6 +21,9 @@ class PLAGUETALEGO_API APlayerPawn : public ABoardPawn
 public:
 	APlayerPawn();
 
+	// Applique les réglages du niveau (UPlayerPlacementSettings), avant BeginPlay. Sans réglages : valeurs du BP.
+	virtual void ApplyPlacementSettings(const UBoardPlacementSettings* Settings) override;
+
 	// Trace de poussière bleue laissée derrière le joueur (point d'accès des futures features : ver, statue…)
 	UFUNCTION(BlueprintPure, Category = "BlueDust")
 	UBlueDustTrailComponent* GetBlueDustTrail() const { return BlueDustTrail; }
